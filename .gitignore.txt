@@ -1,1 +1,11 @@
-*target/*
+target/
+
+*.mp3
+*.png
+*.wav
+*.jpeg
+*.jpg 
+*.obj
+*.fbx
+*.blend
+*.blend1
