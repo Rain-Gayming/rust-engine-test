@@ -136,7 +136,7 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
 
     if VALIDATION_ENABLED {
         info = info.push_next(&mut debug_info);
-        println!("validation enabled")
+        println!("validation enabled :3")
     } else {
         println!("validation disabled")
     }
