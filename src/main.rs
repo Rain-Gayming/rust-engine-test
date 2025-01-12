@@ -6,14 +6,17 @@ use bevy::{
     prelude::*,
     render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology},
 };
+use bevy_fps_ui::*;
+
 #[derive(Component)]
 struct CustomUV;
-
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, setup)
+        .add_plugins(FpsCounterPlugin)
+        //systems
         .add_systems(Update, input_handler)
+        .add_systems(Startup, setup)
         .run();
 }
 
