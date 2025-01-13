@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-raylib = { version = "5.0", features = ["wayland"] }
+bevy = "0.15.1"
+iyes_perf_ui = "*"
+bevy-fps-ui = "0.3.0"
