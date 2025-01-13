@@ -1,5 +1,4 @@
 use bevy::asset::RenderAssetUsages;
-use bevy::math::Vec3;
 use bevy::prelude::Mesh;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 
