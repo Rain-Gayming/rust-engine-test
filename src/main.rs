@@ -6,13 +6,11 @@ mod world;
 
 use std::f32::consts::FRAC_PI_2;
 
+use bevy::color::palettes::css::WHITE;
 #[warn(unused_variables)]
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
-use bevy::{
-    color::palettes::css::LIME, input::mouse::AccumulatedMouseMotion, pbr::wireframe::*,
-    window::PresentMode,
-};
+use bevy::{input::mouse::AccumulatedMouseMotion, pbr::wireframe::*, window::PresentMode};
 use bevy_fps_ui::*;
 use world::chunk::Chunk;
 
@@ -29,8 +27,12 @@ fn main() {
         .add_plugins(FpsCounterPlugin)
         .add_plugins(WireframePlugin)
         //systems
-        .add_systems(Update, input_handler)
+        .add_systems(Update, (input_handler, cursor_ungrab))
         .add_systems(Startup, (setup, cursor_grab))
+        .insert_resource(WireframeConfig {
+            global: true,
+            default_color: WHITE.into(),
+        })
         .run();
 }
 
@@ -58,13 +60,16 @@ fn setup(
             for z in 0..chunk_z_amount {
                 let xyz = Vec3::new(x as f32, y as f32, z as f32);
                 let chunk = Chunk::new(xyz);
-                //let texture_handle = asset_server.load("array_texture.png");
+                let texture_handle = asset_server.load("test.png");
 
                 let chunk_mesh_handle: Handle<Mesh> = meshes.add(chunk.build_mesh());
                 commands.spawn((
                     Mesh3d(chunk_mesh_handle),
                     MeshMaterial3d(materials.add(StandardMaterial {
-                        //base_color_texture: Some(texture_handle.clone()),
+                        base_color: Color::srgba(0.2, 0.7, 0.1, 0.0),
+                        alpha_mode: AlphaMode::Mask(0.2),
+
+                        base_color_texture: Some(texture_handle.clone()),
                         unlit: false,
                         ..Default::default()
                     })),
@@ -72,8 +77,6 @@ fn setup(
                         translation: Vec3::new((x * 32) as f32, (y * 32) as f32, (z * 32) as f32),
                         ..default()
                     },
-                    Wireframe,
-                    WireframeColor { color: LIME.into() },
                 ));
             }
         }
@@ -94,11 +97,16 @@ fn cursor_grab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {
     // also hide the cursor
     primary_window.cursor_options.visible = false;
 }
-fn cursor_ungrab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {
-    let mut primary_window = q_windows.single_mut();
+fn cursor_ungrab(
+    mut q_windows: Query<&mut Window, With<PrimaryWindow>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+) {
+    if keyboard_input.pressed(KeyCode::Escape) {
+        let mut primary_window = q_windows.single_mut();
 
-    primary_window.cursor_options.grab_mode = CursorGrabMode::None;
-    primary_window.cursor_options.visible = true;
+        primary_window.cursor_options.grab_mode = CursorGrabMode::None;
+        primary_window.cursor_options.visible = true;
+    }
 }
 fn input_handler(
     keyboard_input: Res<ButtonInput<KeyCode>>,
