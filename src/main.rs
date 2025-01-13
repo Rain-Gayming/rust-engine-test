@@ -12,8 +12,7 @@ use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{input::mouse::AccumulatedMouseMotion, pbr::wireframe::*, window::PresentMode};
 use bevy_fps_ui::*;
-use world::chunk::Chunk;
-
+use world::world::generate_world;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -28,7 +27,7 @@ fn main() {
         .add_plugins(WireframePlugin)
         //systems
         .add_systems(Update, (input_handler, cursor_ungrab))
-        .add_systems(Startup, (setup, cursor_grab))
+        .add_systems(Startup, (setup, cursor_grab, generate_world))
         .insert_resource(WireframeConfig {
             global: true,
             default_color: WHITE.into(),
@@ -36,12 +35,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+fn setup(mut commands: Commands) {
     // Transform for the camera and lighting, looking at (0,0,0) (the position of the mesh).
     let camera_and_light_transform = Transform::from_xyz(16., 32., 16.);
 
@@ -50,37 +44,6 @@ fn setup(
 
     // Light up the scene.
     commands.spawn((PointLight::default(), camera_and_light_transform));
-
-    let chunk_x_amount = 4;
-    let chunk_y_amount = 4;
-    let chunk_z_amount = 4;
-
-    for x in 0..chunk_x_amount {
-        for y in 0..chunk_y_amount {
-            for z in 0..chunk_z_amount {
-                let xyz = Vec3::new(x as f32, y as f32, z as f32);
-                let chunk = Chunk::new(xyz);
-                let texture_handle = asset_server.load("test.png");
-
-                let chunk_mesh_handle: Handle<Mesh> = meshes.add(chunk.build_mesh());
-                commands.spawn((
-                    Mesh3d(chunk_mesh_handle),
-                    MeshMaterial3d(materials.add(StandardMaterial {
-                        base_color: Color::srgba(0.2, 0.7, 0.1, 0.0),
-                        alpha_mode: AlphaMode::Mask(0.2),
-
-                        base_color_texture: Some(texture_handle.clone()),
-                        unlit: false,
-                        ..Default::default()
-                    })),
-                    Transform {
-                        translation: Vec3::new((x * 32) as f32, (y * 32) as f32, (z * 32) as f32),
-                        ..default()
-                    },
-                ));
-            }
-        }
-    }
 }
 
 fn cursor_grab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {

@@ -1,9 +1,6 @@
 use crate::world::chunk_mesh_builder::ChunkMeshBuilder;
 
-use bevy::{ecs::component, prelude::*, utils::HashMap};
-
-#[derive(Resource)]
-pub struct ChunkMap(HashMap<IVec3, Chunk>);
+use bevy::{ecs::component, prelude::*};
 //contains chunk informatiom ( position, voxels, ect )
 
 const CHUNK_X_SIZE: usize = 32;
