@@ -6,11 +6,11 @@ use super::rendering_constants::*;
 
 #[derive(Default)]
 pub struct ChunkMeshBuilder {
-    vertices: Vec<[f32; 3]>,
-    triangles: Vec<u32>,
-    normals: Vec<[f32; 3]>,
-    uvs: Vec<[f32; 2]>,
-    face_count: u32,
+    pub vertices: Vec<[f32; 3]>,
+    pub triangles: Vec<u32>,
+    pub normals: Vec<[f32; 3]>,
+    pub uvs: Vec<[f32; 2]>,
+    pub face_count: u32,
 }
 
 impl ChunkMeshBuilder {
@@ -56,6 +56,7 @@ impl ChunkMeshBuilder {
         msh.insert_attribute(Mesh::ATTRIBUTE_UV_0, self.uvs);
 
         msh.insert_indices(Indices::U32(self.triangles));
+
         msh
     }
 }

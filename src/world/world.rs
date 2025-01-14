@@ -1,45 +1,124 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::render_resource::ShaderType};
 
 use super::chunk::Chunk;
-use bevy::{ecs::component, prelude::*, utils::HashMap};
+use bevy::utils::HashMap;
 
-#[derive(Resource)]
-pub struct ChunkMap(HashMap<IVec3, Chunk>);
+#[derive(Resource, Deref, DerefMut)]
+pub struct ChunkMap(#[deref] pub HashMap<IVec3, Chunk>);
 
-pub(crate) fn generate_world(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let chunk_x_amount = 4;
-    let chunk_y_amount = 4;
-    let chunk_z_amount = 4;
+#[derive(Component)]
+pub struct ChunkLoader {
+    pub player_position: IVec3,
+    pub loaded_chunks: Vec<IVec3>,
+    pub chunk_entities: HashMap<IVec3, Entity>,
+}
 
-    for x in 0..chunk_x_amount {
-        for y in 0..chunk_y_amount {
-            for z in 0..chunk_z_amount {
-                let xyz = Vec3::new(x as f32, y as f32, z as f32);
-                let chunk = Chunk::new(xyz);
-                let texture_handle = asset_server.load("test.png");
+impl ChunkLoader {
+    fn new(player_position: IVec3) -> ChunkLoader {
+        ChunkLoader {
+            player_position,
+            loaded_chunks: vec![],
+            chunk_entities: HashMap::new(),
+        }
+    }
 
-                let chunk_mesh_handle: Handle<Mesh> = meshes.add(chunk.build_mesh());
-                commands.spawn((
-                    Mesh3d(chunk_mesh_handle),
-                    MeshMaterial3d(materials.add(StandardMaterial {
-                        base_color: Color::srgba(0.2, 0.7, 0.1, 0.0),
-                        alpha_mode: AlphaMode::Mask(0.2),
+    pub fn update_player_position(
+        &mut self,
+        new_position: IVec3,
+        view_distance: i32,
+        chunks: &mut ChunkMap,
+        commands: &mut Commands,
+        materials: &mut ResMut<Assets<StandardMaterial>>,
+        meshes: &mut ResMut<Assets<Mesh>>,
+    ) {
+        let old_chunk_coords = self.player_position;
+        let new_chunk_coords = new_position;
 
-                        base_color_texture: Some(texture_handle.clone()),
-                        unlit: false,
-                        ..Default::default()
-                    })),
-                    Transform {
-                        translation: Vec3::new((x * 32) as f32, (y * 32) as f32, (z * 32) as f32),
-                        ..default()
-                    },
-                ));
+        //has the player enetered a new chunk
+        if old_chunk_coords != new_chunk_coords {
+            println!("loading in a chunk");
+            println!("old chunk: {}", old_chunk_coords);
+            println!("new chunk: {}", new_chunk_coords);
+
+            //unload the old chunks
+
+            //load the chunks around the new chunk
+            let chunks_to_load = self.get_chunks_to_load(new_position, view_distance);
+            for chunk_coords in chunks_to_load {
+                self.load_chunk(chunk_coords, chunks, commands, materials, meshes);
             }
+
+            //update player position reference
+            self.player_position = new_position;
+        }
+    }
+
+    fn get_chunks_to_load(&self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
+        let mut chunks_to_load = vec![];
+        //x - view dist + x + view dist gets all the chunks around the player
+
+        for x in position.x - view_distance..=position.x + view_distance {
+            for y in position.y - view_distance..=position.y + view_distance {
+                for z in position.z - view_distance..=position.z + view_distance {
+                    let chunk_coords = IVec3::new(x, y, z);
+                    if !self.loaded_chunks.contains(&chunk_coords) {
+                        chunks_to_load.push(chunk_coords);
+                        //println!("loading {}", chunk_coords);
+                    }
+                }
+            }
+        }
+        chunks_to_load
+    }
+
+    fn get_chunks_to_unload(&self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
+        let mut chunks_to_unload = vec![];
+        println!("{}", self.loaded_chunks.size());
+        for chunk_coords in &self.loaded_chunks {
+            println!("a chunk is loaded at: {}", chunk_coords);
+            let distance = (chunk_coords.x - position.x).abs()
+                + (chunk_coords.y - position.y).abs()
+                + (chunk_coords.z - position.z).abs();
+            if distance > view_distance + 1 {
+                chunks_to_unload.push(*chunk_coords);
+                println!("unloading {}", chunk_coords);
+            }
+        }
+        chunks_to_unload
+    }
+
+    fn load_chunk(
+        &mut self,
+        chunk_coords: IVec3,
+        chunks: &mut ChunkMap,
+        commands: &mut Commands,
+        materials: &mut ResMut<Assets<StandardMaterial>>,
+        meshes: &mut ResMut<Assets<Mesh>>,
+    ) {
+        let chunk = Chunk::new();
+        chunk.build_mesh(commands, meshes, materials, chunks, chunk_coords);
+        /*println!(
+            "Loaded chunk at ({}, {}, {})",
+            chunk_coords.x, chunk_coords.y, chunk_coords.z
+        );*/
+        let chunks_to_unload = self.get_chunks_to_unload(old_chunk_coords, view_distance);
+        for chunk_coords in chunks_to_unload {
+            println!("chunk found unload");
+            self.unload_chunk(chunk_coords, commands);
+        }
+    }
+
+    fn unload_chunk(&mut self, chunk_coords: IVec3, commands: &mut Commands) {
+        let index = self.loaded_chunks.iter().position(|&c| c == chunk_coords);
+        if let Some(entity) = self.chunk_entities.remove(&chunk_coords) {
+            commands.entity(entity).despawn_recursive();
+        }
+        if let Some(i) = index {
+            self.loaded_chunks.remove(i);
+            println!(
+                "Unloaded chunk at ({}, {}, {})",
+                chunk_coords.x, chunk_coords.y, chunk_coords.z
+            );
         }
     }
 }

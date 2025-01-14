@@ -9,10 +9,12 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::color::palettes::css::WHITE;
 #[warn(unused_variables)]
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{input::mouse::AccumulatedMouseMotion, pbr::wireframe::*, window::PresentMode};
 use bevy_fps_ui::*;
-use world::world::generate_world;
+use world::chunk::Chunk;
+use world::world::{ChunkLoader, ChunkMap};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -25,13 +27,15 @@ fn main() {
         }))
         .add_plugins(FpsCounterPlugin)
         .add_plugins(WireframePlugin)
-        //systems
-        .add_systems(Update, (input_handler, cursor_ungrab))
-        .add_systems(Startup, (setup, cursor_grab, generate_world))
         .insert_resource(WireframeConfig {
             global: true,
             default_color: WHITE.into(),
         })
+        .insert_resource(ChunkMap(HashMap::new()))
+        //systems
+        .add_systems(Update, (input_handler, cursor_ungrab))
+        .add_systems(Startup, (setup, cursor_grab))
+        .add_systems(Update, chunk_loader_system)
         .run();
 }
 
@@ -40,7 +44,15 @@ fn setup(mut commands: Commands) {
     let camera_and_light_transform = Transform::from_xyz(16., 32., 16.);
 
     // Camera in 3D space.
-    commands.spawn((Camera3d::default(), camera_and_light_transform));
+    commands.spawn((
+        Camera3d::default(),
+        camera_and_light_transform,
+        ChunkLoader {
+            player_position: IVec3::new(0, 0, 0),
+            loaded_chunks: vec![],
+            chunk_entities: HashMap::new(),
+        },
+    ));
 
     // Light up the scene.
     commands.spawn((PointLight::default(), camera_and_light_transform));
@@ -117,5 +129,32 @@ fn input_handler(
 
             transform.rotation = Quat::from_euler(EulerRot::YXZ, yaw, pitch, roll);
         }
+    }
+}
+
+fn chunk_loader_system(
+    mut cl_query: Query<(&mut ChunkLoader, &Transform)>,
+    mut chunk_map: ResMut<ChunkMap>,
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
+    for (mut chunk_loader, transform) in cl_query.iter_mut() {
+        let loader_position = transform.translation;
+        let loader_chunk = IVec3::new(
+            loader_position.x as i32 >> 5,
+            loader_position.y as i32 >> 5,
+            loader_position.z as i32 >> 5,
+        );
+
+        let render_distance = 2;
+        chunk_loader.update_player_position(
+            loader_chunk,
+            render_distance,
+            &mut chunk_map,
+            &mut commands,
+            &mut materials,
+            &mut meshes,
+        );
     }
 }
