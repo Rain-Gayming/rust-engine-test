@@ -14,7 +14,9 @@ pub struct ChunkMeshBuilder {
 }
 
 impl ChunkMeshBuilder {
-    pub fn new() -> Self {
+    pub fn new(&mut self) -> Self {
+        self.triangles.with_capacity(393216);
+
         Self::default()
     }
 
