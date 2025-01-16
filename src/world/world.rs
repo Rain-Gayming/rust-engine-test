@@ -1,4 +1,8 @@
+use std::ops::Index;
+
 use bevy::{prelude::*, render::render_resource::ShaderType};
+
+use crate::world::chunk;
 
 use super::chunk::Chunk;
 use bevy::utils::HashMap;
@@ -41,6 +45,10 @@ impl ChunkLoader {
             println!("new chunk: {}", new_chunk_coords);
 
             //unload the old chunks
+            let chunks_to_unload = self.get_chunks_to_unload(old_chunk_coords, view_distance);
+            for chunk_coords in chunks_to_unload {
+                self.unload_chunk(chunk_coords, commands);
+            }
 
             //load the chunks around the new chunk
             let chunks_to_load = self.get_chunks_to_load(new_position, view_distance);
@@ -53,7 +61,7 @@ impl ChunkLoader {
         }
     }
 
-    fn get_chunks_to_load(&self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
+    fn get_chunks_to_load(&mut self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
         let mut chunks_to_load = vec![];
         //x - view dist + x + view dist gets all the chunks around the player
 
@@ -68,20 +76,31 @@ impl ChunkLoader {
                 }
             }
         }
+
+        println!(
+            "loader: total chunks currently loaded: {}",
+            &self.loaded_chunks.len()
+        );
         chunks_to_load
     }
 
-    fn get_chunks_to_unload(&self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
+    fn get_chunks_to_unload(&mut self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
         let mut chunks_to_unload = vec![];
-        println!("{}", self.loaded_chunks.size());
-        for chunk_coords in &self.loaded_chunks {
-            println!("a chunk is loaded at: {}", chunk_coords);
+        println!("getting chunks to unload");
+        println!(
+            "unloader: total chunks currently loaded: {}",
+            &self.loaded_chunks.len()
+        );
+        for chunk_coords in self.loaded_chunks.clone() {
             let distance = (chunk_coords.x - position.x).abs()
                 + (chunk_coords.y - position.y).abs()
                 + (chunk_coords.z - position.z).abs();
-            if distance > view_distance + 1 {
-                chunks_to_unload.push(*chunk_coords);
-                println!("unloading {}", chunk_coords);
+            if distance > view_distance {
+                chunks_to_unload.push(chunk_coords);
+                /*println!(
+                    "chunk: {} is too far (at distance {}) despawning",
+                    chunk_coords, distance
+                );*/
             }
         }
         chunks_to_unload
@@ -95,30 +114,40 @@ impl ChunkLoader {
         materials: &mut ResMut<Assets<StandardMaterial>>,
         meshes: &mut ResMut<Assets<Mesh>>,
     ) {
-        let chunk = Chunk::new();
-        chunk.build_mesh(commands, meshes, materials, chunks, chunk_coords);
-        /*println!(
-            "Loaded chunk at ({}, {}, {})",
-            chunk_coords.x, chunk_coords.y, chunk_coords.z
-        );*/
-        let chunks_to_unload = self.get_chunks_to_unload(old_chunk_coords, view_distance);
-        for chunk_coords in chunks_to_unload {
-            println!("chunk found unload");
-            self.unload_chunk(chunk_coords, commands);
+        if !self.loaded_chunks.contains(&chunk_coords) {
+            //create a chunk
+            let chunk = Chunk::new();
+
+            //add it to loaded chunks
+            self.loaded_chunks.push(chunk_coords);
+
+            //make its mesh
+            let new_chunk = chunk.build_mesh(commands, meshes, materials, chunks, chunk_coords);
+
+            self.chunk_entities.insert(chunk_coords, new_chunk);
+            /*println!(
+                "Loaded chunk at ({}, {}, {})",
+                chunk_coords.x, chunk_coords.y, chunk_coords.z
+            );*/
         }
     }
 
     fn unload_chunk(&mut self, chunk_coords: IVec3, commands: &mut Commands) {
-        let index = self.loaded_chunks.iter().position(|&c| c == chunk_coords);
-        if let Some(entity) = self.chunk_entities.remove(&chunk_coords) {
-            commands.entity(entity).despawn_recursive();
-        }
-        if let Some(i) = index {
-            self.loaded_chunks.remove(i);
+        if let Some(entity) = self.chunk_entities.get(&chunk_coords) {
+            commands.entity(*entity).despawn_recursive();
             println!(
                 "Unloaded chunk at ({}, {}, {})",
                 chunk_coords.x, chunk_coords.y, chunk_coords.z
             );
+        } else {
+            println!("chunk not unloaded for some reason");
         }
+
+        let loaded_index = self
+            .loaded_chunks
+            .iter()
+            .position(|&r| r == chunk_coords)
+            .unwrap();
+        self.loaded_chunks.remove(loaded_index);
     }
 }

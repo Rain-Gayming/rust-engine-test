@@ -1,6 +1,7 @@
 use crate::world::chunk_mesh_builder::ChunkMeshBuilder;
 
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::Indices};
+use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::Indices, utils::HashMap};
+use iyes_perf_ui::entries;
 //contains chunk informatiom ( position, voxels, ect )
 
 use super::{rendering_constants::*, world::ChunkMap};
@@ -34,7 +35,7 @@ impl Chunk {
         materials: &mut ResMut<Assets<StandardMaterial>>,
         chunks: &mut ChunkMap,
         position: IVec3,
-    ) {
+    ) -> Entity {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
@@ -73,22 +74,26 @@ impl Chunk {
 
         let chunk_mesh_handle: Handle<Mesh> = meshes.add(self.mesh_builder.build());
 
-        commands.spawn((
-            Mesh3d(chunk_mesh_handle),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgba(0.2, 0.7, 0.1, 0.0),
-                alpha_mode: AlphaMode::Mask(0.2),
-                unlit: false,
-                ..Default::default()
-            })),
-            Transform {
-                translation: Vec3::new(
-                    (position.x * 32) as f32,
-                    (position.y * 32) as f32,
-                    (position.z * 32) as f32,
-                ),
-                ..default()
-            },
-        ));
+        let id = commands
+            .spawn((
+                Mesh3d(chunk_mesh_handle),
+                MeshMaterial3d(materials.add(StandardMaterial {
+                    base_color: Color::srgba(0.2, 0.7, 0.1, 0.0),
+                    alpha_mode: AlphaMode::Mask(0.2),
+                    unlit: false,
+                    ..Default::default()
+                })),
+                Transform {
+                    translation: Vec3::new(
+                        (position.x * 32) as f32,
+                        (position.y * 32) as f32,
+                        (position.z * 32) as f32,
+                    ),
+                    ..default()
+                },
+            ))
+            .id();
+
+        id
     }
 }
