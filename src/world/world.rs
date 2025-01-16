@@ -1,8 +1,4 @@
-use std::ops::Index;
-
-use bevy::{prelude::*, render::render_resource::ShaderType};
-
-use crate::world::chunk;
+use bevy::prelude::*;
 
 use super::chunk::Chunk;
 use bevy::utils::HashMap;
@@ -18,14 +14,6 @@ pub struct ChunkLoader {
 }
 
 impl ChunkLoader {
-    fn new(player_position: IVec3) -> ChunkLoader {
-        ChunkLoader {
-            player_position,
-            loaded_chunks: vec![],
-            chunk_entities: HashMap::new(),
-        }
-    }
-
     pub fn update_player_position(
         &mut self,
         new_position: IVec3,
@@ -133,6 +121,8 @@ impl ChunkLoader {
     }
 
     fn unload_chunk(&mut self, chunk_coords: IVec3, commands: &mut Commands) {
+        //does the chunk have an entity component?
+        //unload it if so throw an error if not
         if let Some(entity) = self.chunk_entities.get(&chunk_coords) {
             commands.entity(*entity).despawn_recursive();
             println!(
@@ -140,9 +130,11 @@ impl ChunkLoader {
                 chunk_coords.x, chunk_coords.y, chunk_coords.z
             );
         } else {
-            println!("chunk not unloaded for some reason");
+            println!("ERROR: chunk not unloaded for some reason");
+            return;
         }
 
+        //remove the chunk
         let loaded_index = self
             .loaded_chunks
             .iter()

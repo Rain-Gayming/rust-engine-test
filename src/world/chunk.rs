@@ -1,4 +1,4 @@
-use crate::world::chunk_mesh_builder::ChunkMeshBuilder;
+use crate::world::{chunk_mesh_builder::ChunkMeshBuilder, voxel};
 
 use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::Indices, utils::HashMap};
 use iyes_perf_ui::entries;
@@ -6,19 +6,18 @@ use iyes_perf_ui::entries;
 
 use super::{rendering_constants::*, world::ChunkMap};
 
-#[derive(Default)]
 pub struct Chunk {
-    voxels: [[[u32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
+    voxels: [u32; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE],
     mesh_builder: ChunkMeshBuilder,
 }
 
 impl Chunk {
     pub fn new() -> Self {
-        let mut voxels = [[[0u32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE];
+        let mut voxels = [0u32; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
         for x in 0..32usize {
             for y in 0..32usize {
                 for z in 0..32usize {
-                    voxels[x][y][z] = 1;
+                    voxels[x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE] = 1;
                 }
             }
         }
@@ -39,33 +38,34 @@ impl Chunk {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    let val = &mut self.voxels[x][y][z];
-                    if *val == 0 {
+                    let index = x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE;
+                    let val = self.voxels[index];
+                    if val == 0 {
                         continue;
                     }
 
                     let coord = [x as u8, y as u8, z as u8];
-                    if x == 0 || self.voxels[x - 1][y][z] == 0 {
+                    if x == 0 || self.voxels[index - 1] == 0 {
                         self.mesh_builder.add_face(coord, 2);
                     }
 
-                    if x == CHUNK_SIZE - 1 || self.voxels[x + 1][y][z] == 0 {
+                    if x == CHUNK_SIZE - 1 || self.voxels[index + 1] == 0 {
                         self.mesh_builder.add_face(coord, 3);
                     }
 
-                    if y == 0 || self.voxels[x][y - 1][z] == 0 {
+                    if y == 0 || self.voxels[index - CHUNK_SIZE] == 0 {
                         self.mesh_builder.add_face(coord, 5);
                     }
 
-                    if y == CHUNK_SIZE - 1 || self.voxels[x][y + 1][z] == 0 {
+                    if y == CHUNK_SIZE - 1 || self.voxels[index + CHUNK_SIZE] == 0 {
                         self.mesh_builder.add_face(coord, 0);
                     }
 
-                    if z == 0 || self.voxels[x][y][z - 1] == 0 {
+                    if z == 0 || self.voxels[index - CHUNK_SIZE * CHUNK_SIZE] == 0 {
                         self.mesh_builder.add_face(coord, 1);
                     }
 
-                    if z == CHUNK_SIZE - 1 || self.voxels[x][y][z + 1] == 0 {
+                    if z == CHUNK_SIZE - 1 || self.voxels[index + CHUNK_SIZE * CHUNK_SIZE] == 0 {
                         self.mesh_builder.add_face(coord, 4);
                     }
                 }
