@@ -1,7 +1,3 @@
-//! This example demonstrates how to create a custom mesh,
-//! assign a custom UV mapping for a custom texture,
-//! and how to change the UV mapping at run-time.
-mod debug;
 mod world;
 
 use std::f32::consts::FRAC_PI_2;
@@ -41,7 +37,7 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     // Transform for the camera and lighting, looking at (0,0,0) (the position of the mesh).
-    let camera_and_light_transform = Transform::from_xyz(16., 32., 16.);
+    let camera_and_light_transform = Transform::from_xyz(0., 0., 0.);
 
     // Camera in 3D space.
     commands.spawn((
@@ -147,7 +143,7 @@ fn chunk_loader_system(
             loader_position.z as i32 >> 5,
         );
 
-        let render_distance = 2;
+        let render_distance = 4;
         chunk_loader.update_player_position(
             loader_chunk,
             render_distance,
