@@ -6,6 +6,7 @@ use iyes_perf_ui::entries;
 
 use super::{rendering_constants::*, world::ChunkMap};
 
+#[derive(Clone)]
 pub struct Chunk {
     voxels: [u32; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE],
     mesh_builder: ChunkMeshBuilder,
@@ -32,7 +33,6 @@ impl Chunk {
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<StandardMaterial>>,
-        chunks: &mut ChunkMap,
         position: IVec3,
     ) -> Entity {
         for x in 0..CHUNK_SIZE {

@@ -115,8 +115,8 @@ impl ChunkLoader {
             self.loaded_chunks.push(chunk_coords);
 
             //make its mesh
-            let new_chunk = chunk.build_mesh(commands, meshes, materials, chunks, chunk_coords);
-
+            chunks.0.insert(chunk_coords, chunk.clone());
+            let new_chunk = chunk.build_mesh(commands, meshes, materials, chunk_coords);
             self.chunk_entities.insert(chunk_coords, new_chunk);
             /*println!(
                 "Loaded chunk at ({}, {}, {})",

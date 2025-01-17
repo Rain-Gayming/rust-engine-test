@@ -4,7 +4,7 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 
 use super::rendering_constants::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ChunkMeshBuilder {
     pub vertices: Vec<[f32; 3]>,
     pub triangles: Vec<u32>,
