@@ -9,10 +9,10 @@ use bevy::utils::HashMap;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{input::mouse::AccumulatedMouseMotion, pbr::wireframe::*, window::PresentMode};
 use bevy_fps_ui::*;
-use world::chunk::Chunk;
 use world::world::{ChunkLoader, ChunkMap};
 fn main() {
     App::new()
+        //plugins
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "I am a window!".into(),
@@ -23,6 +23,7 @@ fn main() {
         }))
         .add_plugins(FpsCounterPlugin)
         .add_plugins(WireframePlugin)
+        //resources
         .insert_resource(WireframeConfig {
             global: true,
             default_color: WHITE.into(),
@@ -37,12 +38,13 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     // Transform for the camera and lighting, looking at (0,0,0) (the position of the mesh).
-    let camera_and_light_transform = Transform::from_xyz(0., 0., 0.);
+    let camera_transform = Transform::from_xyz(16., 32., 16.);
+    let light_transform = Transform::from_xyz(16., 100., 16.);
 
     // Camera in 3D space.
     commands.spawn((
         Camera3d::default(),
-        camera_and_light_transform,
+        camera_transform,
         ChunkLoader {
             player_position: IVec3::new(0, 0, 0),
             loaded_chunks: vec![],
@@ -51,7 +53,7 @@ fn setup(mut commands: Commands) {
     ));
 
     // Light up the scene.
-    commands.spawn((PointLight::default(), camera_and_light_transform));
+    commands.spawn((PointLight::default(), light_transform));
 }
 
 fn cursor_grab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {

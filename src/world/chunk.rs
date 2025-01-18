@@ -1,10 +1,9 @@
-use crate::world::{chunk_mesh_builder::ChunkMeshBuilder, voxel};
+use crate::world::chunk_mesh_builder::ChunkMeshBuilder;
 
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::Indices, utils::HashMap};
-use iyes_perf_ui::entries;
+use bevy::{pbr::wireframe::NoWireframe, prelude::*};
 //contains chunk informatiom ( position, voxels, ect )
 
-use super::{rendering_constants::*, world::ChunkMap};
+use super::{noise::NoiseGenerator, rendering_constants::*};
 
 #[derive(Clone)]
 pub struct Chunk {
@@ -35,6 +34,7 @@ impl Chunk {
         materials: &mut ResMut<Assets<StandardMaterial>>,
         position: IVec3,
     ) -> Entity {
+        let noise_generator = NoiseGenerator::new(12314142);
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
@@ -44,7 +44,19 @@ impl Chunk {
                         continue;
                     }
 
-                    let coord = [x as u8, y as u8, z as u8];
+                    let mut coord = [0u8; 3];
+
+                    //is the chunk at the top of the world?
+                    //if so then add perlin noise
+                    if y <= 0 {
+                        coord = [x as u8, y as u8, z as u8];
+                    } else {
+                        let height_variation =
+                            noise_generator.get_height(x as f32, z as f32, 0.05, 7.);
+                        let new_y = (10. + height_variation).round() as usize;
+                        coord = [x as u8, new_y as u8, z as u8];
+                        println!("new y: {}", height_variation);
+                    }
                     if x == 0 || self.voxels[index - 1] == 0 {
                         self.mesh_builder.add_face(coord, 2);
                     }
@@ -78,7 +90,7 @@ impl Chunk {
             .spawn((
                 Mesh3d(chunk_mesh_handle),
                 MeshMaterial3d(materials.add(StandardMaterial {
-                    base_color: Color::srgba(0.2, 0.7, 0.1, 0.0),
+                    base_color: Color::srgba(0.2, 0.7, 0.1, 1.0),
                     alpha_mode: AlphaMode::Mask(0.2),
                     unlit: false,
                     ..Default::default()
@@ -91,6 +103,7 @@ impl Chunk {
                     ),
                     ..default()
                 },
+                NoWireframe,
             ))
             .id();
 

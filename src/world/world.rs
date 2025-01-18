@@ -57,10 +57,10 @@ impl ChunkLoader {
             for y in position.y - view_distance..=position.y + view_distance {
                 for z in position.z - view_distance..=position.z + view_distance {
                     let chunk_coords: IVec3;
-                    if y <= 5 {
+                    if y <= 0 {
                         chunk_coords = IVec3::new(x, y, z);
                     } else {
-                        chunk_coords = IVec3::new(x, 5, z);
+                        chunk_coords = IVec3::new(x, 0, z);
                     }
                     if !self.loaded_chunks.contains(&chunk_coords) {
                         chunks_to_load.push(chunk_coords);
