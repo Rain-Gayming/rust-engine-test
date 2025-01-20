@@ -3,6 +3,7 @@ mod world;
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::color::palettes::css::WHITE;
+use bevy::math::vec3;
 #[warn(unused_variables)]
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -39,7 +40,8 @@ fn main() {
 fn setup(mut commands: Commands) {
     // Transform for the camera and lighting, looking at (0,0,0) (the position of the mesh).
     let camera_transform = Transform::from_xyz(16., 32., 16.);
-    let light_transform = Transform::from_xyz(16., 100., 16.);
+    let light_transform =
+        Transform::from_xyz(100., 100., 100.).looking_at(Vec3::new(0., 0., 0.), Vec3::Y);
 
     // Camera in 3D space.
     commands.spawn((
@@ -53,7 +55,7 @@ fn setup(mut commands: Commands) {
     ));
 
     // Light up the scene.
-    commands.spawn((PointLight::default(), light_transform));
+    commands.spawn((DirectionalLight::default(), light_transform));
 }
 
 fn cursor_grab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {
@@ -145,7 +147,7 @@ fn chunk_loader_system(
             loader_position.z as i32 >> 5,
         );
 
-        let render_distance = 4;
+        let render_distance = 1;
         chunk_loader.update_player_position(
             loader_chunk,
             render_distance,

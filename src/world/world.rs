@@ -63,8 +63,12 @@ impl ChunkLoader {
                         chunk_coords = IVec3::new(x, 0, z);
                     }
                     if !self.loaded_chunks.contains(&chunk_coords) {
-                        chunks_to_load.push(chunk_coords);
+                        if y > 0 {
+                            chunks_to_load.push(chunk_coords);
+                        }
                         //println!("loading {}", chunk_coords);
+                    } else {
+                        println!("chunk alr exists");
                     }
                 }
             }
@@ -116,7 +120,7 @@ impl ChunkLoader {
 
             //make its mesh
             chunks.0.insert(chunk_coords, chunk.clone());
-            let new_chunk = chunk.build_mesh(commands, meshes, materials, chunk_coords);
+            let new_chunk = chunk.build_mesh(commands, meshes, materials, chunk_coords, chunks);
             self.chunk_entities.insert(chunk_coords, new_chunk);
             /*println!(
                 "Loaded chunk at ({}, {}, {})",

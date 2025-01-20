@@ -1,30 +1,22 @@
 use crate::world::chunk_mesh_builder::ChunkMeshBuilder;
+use rand::prelude::*;
 
-use bevy::{pbr::wireframe::NoWireframe, prelude::*};
+use bevy::{pbr::wireframe::NoWireframe, prelude::*, utils::HashMap};
 //contains chunk informatiom ( position, voxels, ect )
 
-use super::{noise::NoiseGenerator, rendering_constants::*};
+use super::{noise::NoiseGenerator, rendering_constants::*, voxel::Voxel, world::ChunkMap};
 
 #[derive(Clone)]
 pub struct Chunk {
-    voxels: [u32; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE],
     mesh_builder: ChunkMeshBuilder,
+    voxels_in_chunk: HashMap<[u8; 3], Voxel>,
 }
 
 impl Chunk {
     pub fn new() -> Self {
-        let mut voxels = [0u32; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
-        for x in 0..32usize {
-            for y in 0..32usize {
-                for z in 0..32usize {
-                    voxels[x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE] = 1;
-                }
-            }
-        }
-
         Chunk {
-            voxels,
             mesh_builder: ChunkMeshBuilder::new(),
+            voxels_in_chunk: HashMap::new(),
         }
     }
     pub fn build_mesh(
@@ -33,54 +25,101 @@ impl Chunk {
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<StandardMaterial>>,
         position: IVec3,
+        chunks: &mut ChunkMap,
     ) -> Entity {
-        let noise_generator = NoiseGenerator::new(12314142);
+        let seed = rand::thread_rng().gen_range(0..100);
+        let noise_generator = NoiseGenerator::new(seed);
+
+        //adds the voxels to the hashmap
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    let index = x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE;
-                    let val = self.voxels[index];
-                    if val == 0 {
-                        continue;
-                    }
+                    let mut is_solid = false;
+                    let new_voxel_pos: [u8; 3];
+                    new_voxel_pos = [x, y, z];
 
-                    let mut coord = [0u8; 3];
+                    let voxel = Voxel::new(is_solid, new_voxel_pos);
 
-                    //is the chunk at the top of the world?
-                    //if so then add perlin noise
-                    if y <= 0 {
-                        coord = [x as u8, y as u8, z as u8];
-                    } else {
-                        let height_variation =
-                            noise_generator.get_height(x as f32, z as f32, 0.05, 7.);
-                        let new_y = (10. + height_variation).round() as usize;
-                        coord = [x as u8, new_y as u8, z as u8];
-                        println!("new y: {}", height_variation);
-                    }
-                    if x == 0 || self.voxels[index - 1] == 0 {
-                        self.mesh_builder.add_face(coord, 2);
-                    }
-
-                    if x == CHUNK_SIZE - 1 || self.voxels[index + 1] == 0 {
-                        self.mesh_builder.add_face(coord, 3);
-                    }
-
-                    if y == 0 || self.voxels[index - CHUNK_SIZE] == 0 {
-                        self.mesh_builder.add_face(coord, 5);
-                    }
-
-                    if y == CHUNK_SIZE - 1 || self.voxels[index + CHUNK_SIZE] == 0 {
-                        self.mesh_builder.add_face(coord, 0);
-                    }
-
-                    if z == 0 || self.voxels[index - CHUNK_SIZE * CHUNK_SIZE] == 0 {
-                        self.mesh_builder.add_face(coord, 1);
-                    }
-
-                    if z == CHUNK_SIZE - 1 || self.voxels[index + CHUNK_SIZE * CHUNK_SIZE] == 0 {
-                        self.mesh_builder.add_face(coord, 4);
-                    }
+                    self.voxels_in_chunk.insert([x, y, z], voxel);
                 }
+            }
+        }
+
+        let front_chunk = IVec3::new(position.x, position.y, position.z - 1);
+        let back_chunk = IVec3::new(position.x, position.y, position.z + 1);
+        let top_chunk = IVec3::new(position.x, position.y + 1, position.z);
+        let bottom_chunk = IVec3::new(position.x, position.y - 1, position.z);
+        let left_chunk = IVec3::new(position.x - 1, position.y, position.z);
+        let right_chunk = IVec3::new(position.x + 1, position.y, position.z);
+
+        //actually makes their mesh
+        for voxel in self.voxels_in_chunk.iter() {
+            let voxel_position = voxel.0;
+
+            /*let front_voxel = [voxel_position[0] + 1, voxel_position[1], voxel_position[2]];
+            let back_voxel = [voxel_position[0] - 1, voxel_position[1], voxel_position[2]];
+            let top_voxel = [voxel_position[0], voxel_position[1] + 1, voxel_position[2]];
+            let bottom_voxel = [voxel_position[0], voxel_position[1] - 1, voxel_position[2]];
+            let left_voxel = [voxel_position[0], voxel_position[1], voxel_position[2] - 1];
+            let right_voxel = [voxel_position[0], voxel_position[1], voxel_position[2] + 1];*/
+            //left face
+            if voxel_position[0] == 0
+                || !self
+                    .voxels_in_chunk
+                    .get(&[voxel_position[0] - 1, voxel_position[1], voxel_position[2]])
+                    .is_some()
+            {
+                self.mesh_builder.add_face(*voxel_position, 2);
+            }
+
+            //right face
+            if voxel_position[0] == CHUNK_SIZE - 1
+                || !self
+                    .voxels_in_chunk
+                    .get(&[voxel_position[0] + 1, voxel_position[1], voxel_position[2]])
+                    .is_some()
+            {
+                self.mesh_builder.add_face(*voxel_position, 3);
+            }
+
+            //bottom face
+            if voxel_position[1] == 0
+                || !self
+                    .voxels_in_chunk
+                    .get(&[voxel_position[0], voxel_position[1] - 1, voxel_position[2]])
+                    .is_some()
+            {
+                self.mesh_builder.add_face(*voxel_position, 5);
+            }
+
+            //top faces
+            if voxel_position[1] == CHUNK_SIZE - 1
+                || !self
+                    .voxels_in_chunk
+                    .get(&[voxel_position[0], voxel_position[1] + 1, voxel_position[2]])
+                    .is_some()
+            {
+                self.mesh_builder.add_face(*voxel_position, 0);
+            }
+
+            //front chunk
+            if voxel_position[2] == 0
+                || !self
+                    .voxels_in_chunk
+                    .get(&[voxel_position[0], voxel_position[1], voxel_position[2] - 1])
+                    .is_some()
+            {
+                self.mesh_builder.add_face(*voxel_position, 1);
+            }
+
+            //back chunk
+            if voxel_position[2] == CHUNK_SIZE - 1
+                || !self
+                    .voxels_in_chunk
+                    .get(&[voxel_position[0], voxel_position[1], voxel_position[2] + 1])
+                    .is_some()
+            {
+                self.mesh_builder.add_face(*voxel_position, 4);
             }
         }
 

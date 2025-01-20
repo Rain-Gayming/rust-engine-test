@@ -1,4 +1,4 @@
-pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE: u8 = 32;
 
 pub const VERTICES: [[[f32; 3]; 4]; 6] = [
     // Top
