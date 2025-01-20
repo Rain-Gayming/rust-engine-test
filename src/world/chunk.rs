@@ -36,21 +36,29 @@ impl Chunk {
                 for z in 0..CHUNK_SIZE {
                     let mut is_solid = false;
                     let new_voxel_pos: [u8; 3];
-                    new_voxel_pos = [x, y, z];
-
+                    if y < 30 {
+                        new_voxel_pos = [x as u8, y as u8, z as u8];
+                    } else {
+                        let height_variation =
+                            noise_generator.get_height(x as f32, z as f32, 0.05, 7.);
+                        let new_y = (10. + height_variation).round() as usize;
+                        new_voxel_pos = [x as u8, new_y as u8, z as u8];
+                        println!("new y: {}", new_y);
+                        is_solid = true;
+                    }
                     let voxel = Voxel::new(is_solid, new_voxel_pos);
 
-                    self.voxels_in_chunk.insert([x, y, z], voxel);
+                    self.voxels_in_chunk.insert(new_voxel_pos, voxel);
                 }
             }
         }
 
-        let front_chunk = IVec3::new(position.x, position.y, position.z - 1);
+        /*let front_chunk = IVec3::new(position.x, position.y, position.z - 1);
         let back_chunk = IVec3::new(position.x, position.y, position.z + 1);
         let top_chunk = IVec3::new(position.x, position.y + 1, position.z);
         let bottom_chunk = IVec3::new(position.x, position.y - 1, position.z);
         let left_chunk = IVec3::new(position.x - 1, position.y, position.z);
-        let right_chunk = IVec3::new(position.x + 1, position.y, position.z);
+        let right_chunk = IVec3::new(position.x + 1, position.y, position.z);*/
 
         //actually makes their mesh
         for voxel in self.voxels_in_chunk.iter() {
@@ -62,64 +70,73 @@ impl Chunk {
             let bottom_voxel = [voxel_position[0], voxel_position[1] - 1, voxel_position[2]];
             let left_voxel = [voxel_position[0], voxel_position[1], voxel_position[2] - 1];
             let right_voxel = [voxel_position[0], voxel_position[1], voxel_position[2] + 1];*/
-            //left face
-            if voxel_position[0] == 0
-                || !self
-                    .voxels_in_chunk
-                    .get(&[voxel_position[0] - 1, voxel_position[1], voxel_position[2]])
-                    .is_some()
-            {
-                self.mesh_builder.add_face(*voxel_position, 2);
-            }
 
-            //right face
-            if voxel_position[0] == CHUNK_SIZE - 1
-                || !self
-                    .voxels_in_chunk
-                    .get(&[voxel_position[0] + 1, voxel_position[1], voxel_position[2]])
-                    .is_some()
-            {
-                self.mesh_builder.add_face(*voxel_position, 3);
-            }
+            if voxel.1.is_solid {
+                //left face
+                if voxel_position[0] == 0
+                    || !self
+                        .voxels_in_chunk
+                        .get(&[voxel_position[0] - 1, voxel_position[1], voxel_position[2]])
+                        .unwrap()
+                        .is_solid
+                {
+                    self.mesh_builder.add_face(*voxel_position, 2);
+                }
 
-            //bottom face
-            if voxel_position[1] == 0
-                || !self
-                    .voxels_in_chunk
-                    .get(&[voxel_position[0], voxel_position[1] - 1, voxel_position[2]])
-                    .is_some()
-            {
-                self.mesh_builder.add_face(*voxel_position, 5);
-            }
+                //right face
+                if voxel_position[0] == CHUNK_SIZE - 1
+                    || !self
+                        .voxels_in_chunk
+                        .get(&[voxel_position[0] + 1, voxel_position[1], voxel_position[2]])
+                        .unwrap()
+                        .is_solid
+                {
+                    self.mesh_builder.add_face(*voxel_position, 3);
+                }
 
-            //top faces
-            if voxel_position[1] == CHUNK_SIZE - 1
-                || !self
-                    .voxels_in_chunk
-                    .get(&[voxel_position[0], voxel_position[1] + 1, voxel_position[2]])
-                    .is_some()
-            {
-                self.mesh_builder.add_face(*voxel_position, 0);
-            }
+                //bottom face
+                if voxel_position[1] == 0
+                    || !self
+                        .voxels_in_chunk
+                        .get(&[voxel_position[0], voxel_position[1] - 1, voxel_position[2]])
+                        .unwrap()
+                        .is_solid
+                {
+                    self.mesh_builder.add_face(*voxel_position, 5);
+                }
 
-            //front chunk
-            if voxel_position[2] == 0
-                || !self
-                    .voxels_in_chunk
-                    .get(&[voxel_position[0], voxel_position[1], voxel_position[2] - 1])
-                    .is_some()
-            {
-                self.mesh_builder.add_face(*voxel_position, 1);
-            }
+                //top faces
+                if voxel_position[1] == CHUNK_SIZE - 1
+                    || !self
+                        .voxels_in_chunk
+                        .get(&[voxel_position[0], voxel_position[1] + 1, voxel_position[2]])
+                        .unwrap()
+                        .is_solid
+                {
+                    self.mesh_builder.add_face(*voxel_position, 0);
+                }
 
-            //back chunk
-            if voxel_position[2] == CHUNK_SIZE - 1
-                || !self
-                    .voxels_in_chunk
-                    .get(&[voxel_position[0], voxel_position[1], voxel_position[2] + 1])
-                    .is_some()
-            {
-                self.mesh_builder.add_face(*voxel_position, 4);
+                //front chunk
+                if voxel_position[2] == 0
+                    || !self
+                        .voxels_in_chunk
+                        .get(&[voxel_position[0], voxel_position[1], voxel_position[2] - 1])
+                        .unwrap()
+                        .is_solid
+                {
+                    self.mesh_builder.add_face(*voxel_position, 1);
+                }
+
+                //back chunk
+                if voxel_position[2] == CHUNK_SIZE - 1
+                    || !self
+                        .voxels_in_chunk
+                        .get(&[voxel_position[0], voxel_position[1], voxel_position[2] + 1])
+                        .unwrap()
+                        .is_solid
+                {
+                    self.mesh_builder.add_face(*voxel_position, 4);
+                }
             }
         }
 
