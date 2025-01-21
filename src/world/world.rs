@@ -18,6 +18,7 @@ impl ChunkLoader {
         &mut self,
         new_position: IVec3,
         view_distance: i32,
+        vertical_view_distance: i32,
         chunks: &mut ChunkMap,
         commands: &mut Commands,
         materials: &mut ResMut<Assets<StandardMaterial>>,
@@ -33,7 +34,8 @@ impl ChunkLoader {
             println!("new chunk: {}", new_chunk_coords);
 
             //load the chunks around the new chunk
-            let chunks_to_load = self.get_chunks_to_load(new_position, view_distance);
+            let chunks_to_load =
+                self.get_chunks_to_load(new_position, view_distance, vertical_view_distance);
             for chunk_coords in chunks_to_load {
                 self.load_chunk(chunk_coords, chunks, commands, materials, meshes);
             }
@@ -49,13 +51,18 @@ impl ChunkLoader {
         }
     }
 
-    fn get_chunks_to_load(&mut self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
+    fn get_chunks_to_load(
+        &mut self,
+        position: IVec3,
+        view_distance: i32,
+        vertical_view_distance: i32,
+    ) -> Vec<IVec3> {
         let mut chunks_to_load = vec![];
         //x - view dist + x + view dist gets all the chunks around the player
 
         for x in position.x - view_distance..=position.x + view_distance {
             //TODO: replace with vertical view_distance
-            for y in position.y - view_distance..=position.y + view_distance {
+            for y in position.y - vertical_view_distance..=position.y + vertical_view_distance {
                 for z in position.z - view_distance..=position.z + view_distance {
                     let chunk_coords: IVec3;
                     chunk_coords = IVec3::new(x, y, z);
