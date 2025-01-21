@@ -8,14 +8,12 @@ use super::{noise::NoiseGenerator, rendering_constants::*, voxel::Voxel, world::
 
 #[derive(Clone)]
 pub struct Chunk {
-    mesh_builder: ChunkMeshBuilder,
     voxels_in_chunk: HashMap<[u8; 3], Voxel>,
 }
 
 impl Chunk {
     pub fn new() -> Self {
         Chunk {
-            mesh_builder: ChunkMeshBuilder::new(),
             voxels_in_chunk: HashMap::new(),
         }
     }
@@ -29,6 +27,7 @@ impl Chunk {
     ) -> Entity {
         let seed = rand::thread_rng().gen_range(0..100);
         let noise_generator = NoiseGenerator::new(seed);
+        let mut my_chunk_builder = ChunkMeshBuilder::new();
 
         //adds the voxels to the hashmap
         for x in 0..CHUNK_SIZE {
@@ -40,13 +39,13 @@ impl Chunk {
                         new_voxel_pos = [x as u8, y as u8, z as u8];
                     } else {
                         let height_variation =
-                            noise_generator.get_height(x as f32, z as f32, 0.05, 7.);
-                        let new_y = (10. + height_variation).round() as usize;
-                        new_voxel_pos = [x as u8, new_y as u8, z as u8];
-                        println!("new y: {}", new_y);
+                            noise_generator.get_height(x as f32 as f32, z as f32 as f32, 0.05, 7.);
+
+                        let new_y: u8 = (10. + (height_variation as f32)).round() as u8;
+                        new_voxel_pos = [x as u8, new_y, z as u8];
                         is_solid = true;
                     }
-                    let voxel = Voxel::new(is_solid, new_voxel_pos);
+                    let voxel = Voxel::new(is_solid);
 
                     self.voxels_in_chunk.insert(new_voxel_pos, voxel);
                 }
@@ -80,7 +79,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    self.mesh_builder.add_face(*voxel_position, 2);
+                    my_chunk_builder.add_face(*voxel_position, 2);
                 }
 
                 //right face
@@ -91,7 +90,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    self.mesh_builder.add_face(*voxel_position, 3);
+                    my_chunk_builder.add_face(*voxel_position, 3);
                 }
 
                 //bottom face
@@ -102,7 +101,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    self.mesh_builder.add_face(*voxel_position, 5);
+                    my_chunk_builder.add_face(*voxel_position, 5);
                 }
 
                 //top faces
@@ -113,7 +112,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    self.mesh_builder.add_face(*voxel_position, 0);
+                    my_chunk_builder.add_face(*voxel_position, 0);
                 }
 
                 //front chunk
@@ -124,7 +123,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    self.mesh_builder.add_face(*voxel_position, 1);
+                    my_chunk_builder.add_face(*voxel_position, 1);
                 }
 
                 //back chunk
@@ -135,12 +134,12 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    self.mesh_builder.add_face(*voxel_position, 4);
+                    my_chunk_builder.add_face(*voxel_position, 4);
                 }
             }
         }
 
-        let chunk_mesh_handle: Handle<Mesh> = meshes.add(self.mesh_builder.build());
+        let chunk_mesh_handle: Handle<Mesh> = meshes.add(my_chunk_builder.build());
 
         let id = commands
             .spawn((

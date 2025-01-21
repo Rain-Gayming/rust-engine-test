@@ -32,16 +32,16 @@ impl ChunkLoader {
             println!("old chunk: {}", old_chunk_coords);
             println!("new chunk: {}", new_chunk_coords);
 
-            //unload the old chunks
-            let chunks_to_unload = self.get_chunks_to_unload(old_chunk_coords, view_distance);
-            for chunk_coords in chunks_to_unload {
-                self.unload_chunk(chunk_coords, commands);
-            }
-
             //load the chunks around the new chunk
             let chunks_to_load = self.get_chunks_to_load(new_position, view_distance);
             for chunk_coords in chunks_to_load {
                 self.load_chunk(chunk_coords, chunks, commands, materials, meshes);
+            }
+
+            //unload the old chunks
+            let chunks_to_unload = self.get_chunks_to_unload(old_chunk_coords, view_distance);
+            for chunk_coords in chunks_to_unload {
+                self.unload_chunk(chunk_coords, commands);
             }
 
             //update player position reference
@@ -54,45 +54,38 @@ impl ChunkLoader {
         //x - view dist + x + view dist gets all the chunks around the player
 
         for x in position.x - view_distance..=position.x + view_distance {
+            //TODO: replace with vertical view_distance
             for y in position.y - view_distance..=position.y + view_distance {
                 for z in position.z - view_distance..=position.z + view_distance {
                     let chunk_coords: IVec3;
-                    if y <= 0 {
-                        chunk_coords = IVec3::new(x, y, z);
-                    } else {
-                        chunk_coords = IVec3::new(x, 0, z);
-                    }
-                    if !self.loaded_chunks.contains(&chunk_coords) {
-                        if y > 0 {
+                    chunk_coords = IVec3::new(x, y, z);
+
+                    if y == 0 {
+                        if !self.loaded_chunks.contains(&chunk_coords) {
                             chunks_to_load.push(chunk_coords);
                         }
-                        //println!("loading {}", chunk_coords);
-                    } else {
-                        println!("chunk alr exists");
                     }
                 }
             }
         }
 
-        println!(
-            "loader: total chunks currently loaded: {}",
-            &self.loaded_chunks.len()
-        );
+        println!("loading {} chunks", chunks_to_load.len());
         chunks_to_load
     }
 
     fn get_chunks_to_unload(&mut self, position: IVec3, view_distance: i32) -> Vec<IVec3> {
         let mut chunks_to_unload = vec![];
         println!("getting chunks to unload");
-        println!(
-            "unloader: total chunks currently loaded: {}",
-            &self.loaded_chunks.len()
-        );
         for chunk_coords in self.loaded_chunks.clone() {
-            let distance = (chunk_coords.x - position.x).abs()
-                + (chunk_coords.y - position.y).abs()
-                + (chunk_coords.z - position.z).abs();
-            if distance > view_distance {
+            let f_pos = Vec3::new(position.x as f32, position.y as f32, position.z as f32);
+            let f_c_pos = Vec3::new(
+                chunk_coords.x as f32,
+                chunk_coords.y as f32,
+                chunk_coords.z as f32,
+            );
+            let distance = Vec3::distance(f_pos, f_c_pos);
+
+            if distance > view_distance as f32 {
                 chunks_to_unload.push(chunk_coords);
                 /*println!(
                     "chunk: {} is too far (at distance {}) despawning",
@@ -111,22 +104,20 @@ impl ChunkLoader {
         materials: &mut ResMut<Assets<StandardMaterial>>,
         meshes: &mut ResMut<Assets<Mesh>>,
     ) {
-        if !self.loaded_chunks.contains(&chunk_coords) {
-            //create a chunk
-            let chunk = Chunk::new();
+        //create a chunk
+        let chunk = Chunk::new();
 
-            //add it to loaded chunks
-            self.loaded_chunks.push(chunk_coords);
+        //add it to loaded chunks
+        self.loaded_chunks.push(chunk_coords);
 
-            //make its mesh
-            chunks.0.insert(chunk_coords, chunk.clone());
-            let new_chunk = chunk.build_mesh(commands, meshes, materials, chunk_coords, chunks);
-            self.chunk_entities.insert(chunk_coords, new_chunk);
-            /*println!(
-                "Loaded chunk at ({}, {}, {})",
-                chunk_coords.x, chunk_coords.y, chunk_coords.z
-            );*/
-        }
+        //make its mesh
+        chunks.0.insert(chunk_coords, chunk.clone());
+        let new_chunk = chunk.build_mesh(commands, meshes, materials, chunk_coords, chunks);
+        self.chunk_entities.insert(chunk_coords, new_chunk);
+        /*println!(
+            "Loaded chunk at ({}, {}, {})",
+            chunk_coords.x, chunk_coords.y, chunk_coords.z
+        );*/
     }
 
     fn unload_chunk(&mut self, chunk_coords: IVec3, commands: &mut Commands) {
@@ -134,10 +125,6 @@ impl ChunkLoader {
         //unload it if so throw an error if not
         if let Some(entity) = self.chunk_entities.get(&chunk_coords) {
             commands.entity(*entity).despawn_recursive();
-            println!(
-                "Unloaded chunk at ({}, {}, {})",
-                chunk_coords.x, chunk_coords.y, chunk_coords.z
-            );
         } else {
             println!("ERROR: chunk not unloaded for some reason");
             return;
