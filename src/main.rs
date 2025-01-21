@@ -147,7 +147,7 @@ fn chunk_loader_system(
             loader_position.z as i32 >> 5,
         );
 
-        let render_distance = 12;
+        let render_distance = 8;
         let vertical_render_distance = 6;
         chunk_loader.update_player_position(
             loader_chunk,
