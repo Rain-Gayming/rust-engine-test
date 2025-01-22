@@ -69,8 +69,8 @@ impl ChunkLoader {
     ) {
         //x - view dist + x + view dist gets all the chunks around the player
 
+        let mut chunks_loaded: i32 = 0;
         for x in position.x - view_distance..=position.x + view_distance {
-            //TODO: replace with vertical view_distance
             for y in position.y - vertical_view_distance..=position.y + vertical_view_distance {
                 for z in position.z - view_distance..=position.z + view_distance {
                     let chunk_coords: IVec3;
@@ -78,6 +78,7 @@ impl ChunkLoader {
 
                     if y == 0 {
                         if !self.loaded_chunks.contains(&chunk_coords) {
+                            chunks_loaded += 1;
                             //create a chunk
                             let chunk = Chunk::new();
 
@@ -98,6 +99,7 @@ impl ChunkLoader {
                 }
             }
         }
+        println!("chunks loaded: {}", chunks_loaded);
     }
 
     fn unload_chunks(
@@ -108,6 +110,8 @@ impl ChunkLoader {
         commands: &mut Commands,
     ) {
         println!("getting chunks to unload");
+
+        let mut chunks_unloaded: i32 = 0;
         for chunk_coords in self.loaded_chunks.clone() {
             let f_pos = Vec3::new(position.x as f32, position.y as f32, position.z as f32);
             let f_c_pos = Vec3::new(
@@ -125,6 +129,7 @@ impl ChunkLoader {
                     return;
                 }
 
+                chunks_unloaded += 1;
                 //remove the chunk
                 let loaded_index = self
                     .loaded_chunks
@@ -134,5 +139,6 @@ impl ChunkLoader {
                 self.loaded_chunks.remove(loaded_index);
             }
         }
+        println!("chunks unloaded: {}", chunks_unloaded);
     }
 }

@@ -148,7 +148,7 @@ fn chunk_loader_system(
         );
 
         let render_distance = 8;
-        let vertical_render_distance = 6;
+        let vertical_render_distance = 1;
         chunk_loader.update_player_position(
             loader_chunk,
             render_distance,

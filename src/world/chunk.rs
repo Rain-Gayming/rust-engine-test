@@ -23,7 +23,7 @@ impl Chunk {
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<StandardMaterial>>,
         position: IVec3,
-        chunks: &mut ChunkMap,
+        _chunks: &mut ChunkMap,
     ) -> Entity {
         let seed = rand::thread_rng().gen_range(0..100);
         let noise_generator = NoiseGenerator::new(seed);
@@ -52,23 +52,9 @@ impl Chunk {
             }
         }
 
-        /*let front_chunk = IVec3::new(position.x, position.y, position.z - 1);
-        let back_chunk = IVec3::new(position.x, position.y, position.z + 1);
-        let top_chunk = IVec3::new(position.x, position.y + 1, position.z);
-        let bottom_chunk = IVec3::new(position.x, position.y - 1, position.z);
-        let left_chunk = IVec3::new(position.x - 1, position.y, position.z);
-        let right_chunk = IVec3::new(position.x + 1, position.y, position.z);*/
-
         //actually makes their mesh
         for voxel in self.voxels_in_chunk.iter() {
             let voxel_position = voxel.0;
-
-            /*let front_voxel = [voxel_position[0] + 1, voxel_position[1], voxel_position[2]];
-            let back_voxel = [voxel_position[0] - 1, voxel_position[1], voxel_position[2]];
-            let top_voxel = [voxel_position[0], voxel_position[1] + 1, voxel_position[2]];
-            let bottom_voxel = [voxel_position[0], voxel_position[1] - 1, voxel_position[2]];
-            let left_voxel = [voxel_position[0], voxel_position[1], voxel_position[2] - 1];
-            let right_voxel = [voxel_position[0], voxel_position[1], voxel_position[2] + 1];*/
 
             if voxel.1.is_solid {
                 //left face
