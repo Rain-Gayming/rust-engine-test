@@ -16,7 +16,7 @@ fn main() {
         //plugins
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "I am a window!".into(),
+                title: "Rust Voxel Engine".into(),
                 present_mode: PresentMode::AutoNoVsync,
                 ..default()
             }),
