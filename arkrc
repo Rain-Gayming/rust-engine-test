@@ -1,0 +1,11 @@
+[ExtractDialog]
+2 screens: Window-Maximized=true
+DirHistory[$e]=/usr/share/themes/,$HOME/Downloads/
+
+[General]
+LockSidebar=true
+ShowSidebar=true
+
+[MainWindow]
+StatusBar=Disabled
+ToolBarsMovable=Disabled

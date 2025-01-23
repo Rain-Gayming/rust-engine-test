@@ -1,5 +1,4 @@
 use crate::world::chunk_mesh_builder::ChunkMeshBuilder;
-use rand::prelude::*;
 
 use bevy::{pbr::wireframe::NoWireframe, prelude::*, utils::HashMap};
 //contains chunk informatiom ( position, voxels, ect )
@@ -24,22 +23,29 @@ impl Chunk {
         materials: &mut ResMut<Assets<StandardMaterial>>,
         position: IVec3,
         _chunks: &mut ChunkMap,
+        noise_generator: NoiseGenerator,
     ) -> Entity {
-        let seed = rand::thread_rng().gen_range(0..100);
-        let noise_generator = NoiseGenerator::new(seed);
         let mut my_chunk_builder = ChunkMeshBuilder::new();
 
         //adds the voxels to the hashmap
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
+                    let world_pos = Self::local_pos_to_world(
+                        position.into(),
+                        Vec3::new(x as f32, y as f32, z as f32),
+                    );
                     let mut is_solid = false;
                     let new_voxel_pos: [u8; 3];
                     if y < 30 {
                         new_voxel_pos = [x as u8, y as u8, z as u8];
                     } else {
-                        let height_variation =
-                            noise_generator.get_height(x as f32 as f32, z as f32 as f32, 0.05, 7.);
+                        let height_variation = noise_generator.get_height(
+                            world_pos.x as f32,
+                            world_pos.z as f32,
+                            0.05,
+                            7.,
+                        );
 
                         let new_y: u8 = (10. + (height_variation as f32)).round() as u8;
                         new_voxel_pos = [x as u8, new_y, z as u8];
@@ -149,5 +155,12 @@ impl Chunk {
             .id();
 
         id
+    }
+    pub fn local_pos_to_world(offset: [i32; 3], local_pos: Vec3) -> Vec3 {
+        Vec3::new(
+            local_pos.x as f32 + (offset[0] as f32 * CHUNK_SIZE as f32),
+            local_pos.y as f32 + (offset[1] as f32 * CHUNK_SIZE as f32),
+            local_pos.z as f32 + (offset[2] as f32 * CHUNK_SIZE as f32),
+        )
     }
 }

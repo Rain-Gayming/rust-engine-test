@@ -3,19 +3,22 @@ mod world;
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::color::palettes::css::WHITE;
+use bevy::math::vec3;
 #[warn(unused_variables)]
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{input::mouse::AccumulatedMouseMotion, pbr::wireframe::*, window::PresentMode};
 use bevy_fps_ui::*;
+use rand::Rng;
+use world::noise::NoiseGenerator;
 use world::world::{ChunkLoader, ChunkMap};
 fn main() {
     App::new()
         //plugins
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Rust Voxel Engine".into(),
+                title: "I am a window!".into(),
                 present_mode: PresentMode::AutoNoVsync,
                 ..default()
             }),
@@ -42,6 +45,8 @@ fn setup(mut commands: Commands) {
     let light_transform =
         Transform::from_xyz(100., 100., 100.).looking_at(Vec3::new(0., 0., 0.), Vec3::Y);
 
+    let seed = rand::thread_rng().gen_range(0..10000);
+    let noise_generator = NoiseGenerator::new(seed);
     // Camera in 3D space.
     commands.spawn((
         Camera3d::default(),
@@ -50,6 +55,7 @@ fn setup(mut commands: Commands) {
             player_position: IVec3::new(0, 0, 0),
             loaded_chunks: vec![],
             chunk_entities: HashMap::new(),
+            noise_generator,
         },
     ));
 
@@ -146,7 +152,7 @@ fn chunk_loader_system(
             loader_position.z as i32 >> 5,
         );
 
-        let render_distance = 4;
+        let render_distance = 8;
         let vertical_render_distance = 1;
         chunk_loader.update_player_position(
             loader_chunk,

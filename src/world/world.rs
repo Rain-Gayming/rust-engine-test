@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::chunk::Chunk;
+use super::{chunk::Chunk, noise::NoiseGenerator};
 use bevy::utils::HashMap;
 
 #[derive(Resource, Deref, DerefMut)]
@@ -11,6 +11,7 @@ pub struct ChunkLoader {
     pub player_position: IVec3,
     pub loaded_chunks: Vec<IVec3>,
     pub chunk_entities: HashMap<IVec3, Entity>,
+    pub noise_generator: NoiseGenerator,
 }
 
 impl ChunkLoader {
@@ -87,8 +88,14 @@ impl ChunkLoader {
 
                             //make its mesh
                             chunks.0.insert(chunk_coords, chunk.clone());
-                            let new_chunk =
-                                chunk.build_mesh(commands, meshes, materials, chunk_coords, chunks);
+                            let new_chunk = chunk.build_mesh(
+                                commands,
+                                meshes,
+                                materials,
+                                chunk_coords,
+                                chunks,
+                                self.noise_generator.clone(),
+                            );
                             self.chunk_entities.insert(chunk_coords, new_chunk);
                             /*println!(
                                 "Loaded chunk at ({}, {}, {})",
