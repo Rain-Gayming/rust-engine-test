@@ -9,8 +9,4 @@ impl Voxel {
     pub fn new(is_solid: bool) -> Self {
         Voxel { is_solid: is_solid }
     }
-
-    pub fn get_solid(&mut self) -> bool {
-        self.is_solid
-    }
 }

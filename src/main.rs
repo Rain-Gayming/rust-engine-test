@@ -3,7 +3,6 @@ mod world;
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::color::palettes::css::WHITE;
-use bevy::math::vec3;
 #[warn(unused_variables)]
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -147,7 +146,7 @@ fn chunk_loader_system(
             loader_position.z as i32 >> 5,
         );
 
-        let render_distance = 8;
+        let render_distance = 4;
         let vertical_render_distance = 1;
         chunk_loader.update_player_position(
             loader_chunk,
