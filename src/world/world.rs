@@ -24,6 +24,7 @@ impl ChunkLoader {
         commands: &mut Commands,
         materials: &mut ResMut<Assets<StandardMaterial>>,
         meshes: &mut ResMut<Assets<Mesh>>,
+        asset_server: &mut Res<AssetServer>,
     ) {
         let old_chunk_coords = self.player_position;
         let new_chunk_coords = new_position;
@@ -43,6 +44,7 @@ impl ChunkLoader {
                 commands,
                 materials,
                 meshes,
+                asset_server,
             );
 
             //unload the old chunks
@@ -67,6 +69,7 @@ impl ChunkLoader {
         commands: &mut Commands,
         materials: &mut ResMut<Assets<StandardMaterial>>,
         meshes: &mut ResMut<Assets<Mesh>>,
+        asset_server: &mut Res<AssetServer>,
     ) {
         //x - view dist + x + view dist gets all the chunks around the player
 
@@ -95,6 +98,7 @@ impl ChunkLoader {
                                 chunk_coords,
                                 chunks,
                                 self.noise_generator.clone(),
+                                asset_server,
                             );
                             self.chunk_entities.insert(chunk_coords, new_chunk);
                             /*println!(

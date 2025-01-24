@@ -1,6 +1,8 @@
 use bevy::asset::RenderAssetUsages;
+use bevy::math::Vec2;
 use bevy::prelude::Mesh;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
+use bevy::sprite::TextureSlice;
 
 use super::rendering_constants::*;
 
@@ -30,7 +32,7 @@ impl ChunkMeshBuilder {
         }
         base
     }
-    pub fn add_face(&mut self, coord: [u8; 3], face_index: u8) {
+    pub fn add_face(&mut self, coord: [u8; 3], face_index: u8, position: Vec2) {
         for i in &VERTICES[face_index as usize] {
             self.vertices.push(Self::add_vec3(*i, coord));
         }
@@ -46,8 +48,12 @@ impl ChunkMeshBuilder {
         for _ in 0..4 {
             self.normals.push(NORMALS[face_index as usize]);
         }
-
-        self.uvs.extend_from_slice(&UVS);
+        let mut uvs = UVS.clone();
+        for uv in &mut uvs {
+            uv[0] += position.x;
+            uv[1] += position.y;
+        }
+        self.uvs.extend_from_slice(&uvs);
         self.face_count += 1;
     }
 

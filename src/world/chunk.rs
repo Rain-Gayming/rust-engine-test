@@ -3,7 +3,9 @@ use crate::world::chunk_mesh_builder::ChunkMeshBuilder;
 use bevy::{pbr::wireframe::NoWireframe, prelude::*, utils::HashMap};
 //contains chunk informatiom ( position, voxels, ect )
 
-use super::{noise::NoiseGenerator, rendering_constants::*, voxel::Voxel, world::ChunkMap};
+use super::{
+    block::Block, noise::NoiseGenerator, rendering_constants::*, voxel::Voxel, world::ChunkMap,
+};
 
 #[derive(Clone)]
 pub struct Chunk {
@@ -24,6 +26,7 @@ impl Chunk {
         position: IVec3,
         _chunks: &mut ChunkMap,
         noise_generator: NoiseGenerator,
+        asset_server: &mut Res<AssetServer>,
     ) -> Entity {
         let mut my_chunk_builder = ChunkMeshBuilder::new();
 
@@ -49,7 +52,16 @@ impl Chunk {
                         new_voxel_pos = [x as u8, new_y, z as u8];
                         is_solid = true;
                     }
-                    let voxel = Voxel::new(is_solid);
+
+                    let block: Block;
+
+                    if y > 4 {
+                        block = Block::stone();
+                    } else {
+                        block = Block::dirt();
+                    }
+
+                    let voxel = Voxel::new(is_solid, block);
 
                     self.voxels_in_chunk.insert(new_voxel_pos, voxel);
                 }
@@ -60,6 +72,7 @@ impl Chunk {
         for voxel in self.voxels_in_chunk.iter() {
             let voxel_position = voxel.0;
 
+            println!("{}", voxel.1.block.block_name);
             if voxel.1.is_solid {
                 //left face
                 if voxel_position[0] == 0
@@ -69,7 +82,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    my_chunk_builder.add_face(*voxel_position, 2);
+                    my_chunk_builder.add_face(*voxel_position, 2, voxel.1.block.texture_pos);
                 }
 
                 //right face
@@ -80,7 +93,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    my_chunk_builder.add_face(*voxel_position, 3);
+                    my_chunk_builder.add_face(*voxel_position, 3, voxel.1.block.texture_pos);
                 }
 
                 //bottom face
@@ -91,7 +104,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    my_chunk_builder.add_face(*voxel_position, 5);
+                    my_chunk_builder.add_face(*voxel_position, 5, voxel.1.block.texture_pos);
                 }
 
                 //top faces
@@ -102,7 +115,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    my_chunk_builder.add_face(*voxel_position, 0);
+                    my_chunk_builder.add_face(*voxel_position, 0, voxel.1.block.texture_pos);
                 }
 
                 //front chunk
@@ -113,7 +126,7 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    my_chunk_builder.add_face(*voxel_position, 1);
+                    my_chunk_builder.add_face(*voxel_position, 1, voxel.1.block.texture_pos);
                 }
 
                 //back chunk
@@ -124,18 +137,18 @@ impl Chunk {
                         .unwrap()
                         .is_solid
                 {
-                    my_chunk_builder.add_face(*voxel_position, 4);
+                    my_chunk_builder.add_face(*voxel_position, 4, voxel.1.block.texture_pos);
                 }
             }
         }
 
         let chunk_mesh_handle: Handle<Mesh> = meshes.add(my_chunk_builder.build());
-
+        let custom_texture_handle: Handle<Image> = asset_server.load("array_texture.png");
         let id = commands
             .spawn((
                 Mesh3d(chunk_mesh_handle),
                 MeshMaterial3d(materials.add(StandardMaterial {
-                    base_color: Color::srgba(0.2, 0.7, 0.1, 1.0),
+                    base_color_texture: Some(custom_texture_handle),
                     alpha_mode: AlphaMode::Mask(0.2),
                     unlit: false,
                     ..Default::default()

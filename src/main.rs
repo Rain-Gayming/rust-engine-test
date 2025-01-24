@@ -143,6 +143,7 @@ fn chunk_loader_system(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut asset_server: Res<AssetServer>,
 ) {
     for (mut chunk_loader, transform) in cl_query.iter_mut() {
         let loader_position = transform.translation;
@@ -162,6 +163,7 @@ fn chunk_loader_system(
             &mut commands,
             &mut materials,
             &mut meshes,
+            &mut asset_server,
         );
     }
 }
