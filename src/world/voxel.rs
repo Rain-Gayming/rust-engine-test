@@ -15,9 +15,4 @@ impl Voxel {
             block: block,
         }
     }
-
-    pub fn set_visible(&mut self, visible: bool) -> &mut bool {
-        self.is_visible = visible;
-        &mut self.is_visible
-    }
 }

@@ -162,17 +162,6 @@ impl Chunk {
         id
     }
 
-    pub fn check_voxel_above(&mut self, position: [u8; 3]) -> bool {
-        let mut has_voxel = false;
-        if self
-            .voxels_in_chunk
-            .get(&[position[0], position[1] + 1, position[2]])
-            .is_some()
-        {
-            has_voxel = true;
-        }
-        has_voxel
-    }
     pub fn local_pos_to_world(offset: IVec3, local_pos: Vec3) -> Vec3 {
         Vec3::new(
             local_pos.x as f32 + (offset[0] as f32 * CHUNK_SIZE as f32),
