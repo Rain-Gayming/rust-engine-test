@@ -12,6 +12,7 @@ use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{input::mouse::AccumulatedMouseMotion, pbr::wireframe::*, window::PresentMode};
 use bevy_egui::EguiPlugin;
 use bevy_fps_ui::*;
+use bevy_framepace::Limiter;
 use game::game_state::GameState;
 use game::settings::GameSettings;
 use rand::Rng;
@@ -34,6 +35,7 @@ fn main() {
         .add_plugins(FpsCounterPlugin)
         .add_plugins(WireframePlugin)
         .add_plugins(EguiPlugin)
+        .add_plugins(bevy_framepace::FramepacePlugin)
         //resources
         .insert_resource(WireframeConfig {
             global: true,
@@ -43,7 +45,7 @@ fn main() {
         .insert_resource(GameSettings::default())
         .insert_resource(GameState { is_paused: false })
         //systems
-        .add_systems(Update, (input_handler, cursor_grab))
+        .add_systems(Update, (input_handler, cursor_grab, update))
         .add_systems(Startup, setup)
         .add_systems(Update, chunk_loader_system)
         .add_systems(Update, ui_example_system)
@@ -145,6 +147,15 @@ fn input_handler(
                 transform.rotation = Quat::from_euler(EulerRot::YXZ, yaw, pitch, roll);
             }
         }
+    }
+}
+
+fn update(settings: Res<GameSettings>, mut limiter: ResMut<bevy_framepace::FramepaceSettings>) {
+    limiter.limiter = match limiter.limiter {
+        Limiter::Auto => Limiter::from_framerate(settings.fps_limit as f64),
+        Limiter::Off => Limiter::from_framerate(settings.fps_limit as f64),
+
+        Limiter::Manual(_) => Limiter::from_framerate(settings.fps_limit as f64),
     }
 }
 
