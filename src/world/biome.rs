@@ -1,4 +1,6 @@
-use super::block::Block;
+use noise::{NoiseFn, Perlin};
+
+use super::{block::Block, noise::NoiseGenerator};
 
 #[derive(Clone)]
 pub struct Biome {
@@ -26,5 +28,31 @@ impl Biome {
             amplitude: 3.0,
         };
         biome
+    }
+}
+
+pub struct BiomeGenerator {
+    temperature_noise: Perlin,
+    rainfall_noise: Perlin,
+}
+
+impl BiomeGenerator {
+    pub fn new(seed: u32) -> Self {
+        Self {
+            temperature_noise: Perlin::new(seed),
+            rainfall_noise: Perlin::new(seed.wrapping_add(1)),
+        }
+    }
+
+    pub fn get_biome(&self, wx: f64, wz: f64) -> Biome {
+        let scale = 0.03;
+        let temperature = self.temperature_noise.get([wx * scale, wz * scale]);
+        let rainfall = self.rainfall_noise.get([wx * scale, wz * scale]);
+        println!("rainfall: {}", rainfall);
+        println!("temp: {}", temperature);
+        match (temperature, rainfall) {
+            (t, r) if t > 0.5 && r < -0.3 => Biome::desert(),
+            _ => Biome::planes(),
+        }
     }
 }

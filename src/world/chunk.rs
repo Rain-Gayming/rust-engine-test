@@ -47,7 +47,8 @@ impl Chunk {
                     );
                     let block: Block;
 
-                    let is_visible = (world_pos.y as f32) < 10. + (height_variation as f32).round();
+                    let is_visible = (world_pos.y as f32)
+                        < biome.base_height as f32 + (height_variation as f32).round();
                     /*if new_voxel_pos[1] < biome.base_height - 3 {
                         block = Block::stone();
                     } else {

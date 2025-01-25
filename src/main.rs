@@ -3,7 +3,6 @@ mod world;
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::color::palettes::css::WHITE;
-use bevy::math::vec3;
 #[warn(unused_variables)]
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -11,6 +10,7 @@ use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{input::mouse::AccumulatedMouseMotion, pbr::wireframe::*, window::PresentMode};
 use bevy_fps_ui::*;
 use rand::Rng;
+use world::biome::BiomeGenerator;
 use world::noise::NoiseGenerator;
 use world::world::{ChunkLoader, ChunkMap};
 fn main() {
@@ -56,6 +56,7 @@ fn setup(mut commands: Commands) {
             loaded_chunks: vec![],
             chunk_entities: HashMap::new(),
             noise_generator,
+            biome_generator: BiomeGenerator::new(seed),
         },
     ));
 

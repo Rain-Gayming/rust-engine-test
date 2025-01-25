@@ -2,7 +2,6 @@ use bevy::asset::RenderAssetUsages;
 use bevy::math::Vec2;
 use bevy::prelude::Mesh;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
-use bevy::sprite::TextureSlice;
 
 use super::rendering_constants::*;
 
