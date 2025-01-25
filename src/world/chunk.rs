@@ -77,7 +77,7 @@ impl Chunk {
                         .unwrap()
                         .is_visible
                 {
-                    my_chunk_builder.add_face(*voxel_position, 2, voxel.1.block.texture_pos);
+                    my_chunk_builder.add_face(*voxel_position, 2, voxel.1.block.texture_pos_left);
                 }
 
                 //right face
@@ -88,7 +88,7 @@ impl Chunk {
                         .unwrap()
                         .is_visible
                 {
-                    my_chunk_builder.add_face(*voxel_position, 3, voxel.1.block.texture_pos);
+                    my_chunk_builder.add_face(*voxel_position, 3, voxel.1.block.texture_pos_right);
                 }
 
                 //bottom face
@@ -99,7 +99,7 @@ impl Chunk {
                         .unwrap()
                         .is_visible
                 {
-                    my_chunk_builder.add_face(*voxel_position, 5, voxel.1.block.texture_pos);
+                    my_chunk_builder.add_face(*voxel_position, 5, voxel.1.block.texture_pos_bottom);
                 }
 
                 //top faces
@@ -110,7 +110,7 @@ impl Chunk {
                         .unwrap()
                         .is_visible
                 {
-                    my_chunk_builder.add_face(*voxel_position, 0, voxel.1.block.texture_pos);
+                    my_chunk_builder.add_face(*voxel_position, 0, voxel.1.block.texture_pos_top);
                 }
 
                 //front chunk
@@ -121,7 +121,7 @@ impl Chunk {
                         .unwrap()
                         .is_visible
                 {
-                    my_chunk_builder.add_face(*voxel_position, 1, voxel.1.block.texture_pos);
+                    my_chunk_builder.add_face(*voxel_position, 1, voxel.1.block.texture_pos_front);
                 }
 
                 //back chunk
@@ -132,7 +132,7 @@ impl Chunk {
                         .unwrap()
                         .is_visible
                 {
-                    my_chunk_builder.add_face(*voxel_position, 4, voxel.1.block.texture_pos);
+                    my_chunk_builder.add_face(*voxel_position, 4, voxel.1.block.texture_pos_back);
                 }
             }
         }
