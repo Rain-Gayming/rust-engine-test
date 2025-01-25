@@ -1,4 +1,7 @@
 use bevy::prelude::*;
+use rand::Rng;
+
+use crate::world::biome::Biome;
 
 use super::{chunk::Chunk, noise::NoiseGenerator};
 use bevy::utils::HashMap;
@@ -88,6 +91,13 @@ impl ChunkLoader {
 
                             //add it to loaded chunks
                             self.loaded_chunks.push(chunk_coords);
+                            let biome: Biome;
+                            let coin_flip = rand::thread_rng().gen_range(0..2);
+                            if coin_flip == 1 {
+                                biome = Biome::planes();
+                            } else {
+                                biome = Biome::desert();
+                            }
 
                             //make its mesh
                             chunks.0.insert(chunk_coords, chunk.clone());
@@ -99,6 +109,7 @@ impl ChunkLoader {
                                 chunks,
                                 self.noise_generator.clone(),
                                 asset_server,
+                                biome,
                             );
                             self.chunk_entities.insert(chunk_coords, new_chunk);
                             /*println!(

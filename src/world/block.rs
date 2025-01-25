@@ -23,4 +23,20 @@ impl Block {
 
         block
     }
+    pub fn sand() -> Block {
+        let block = Block {
+            block_name: "sand".to_string(),
+            texture_pos: Vec2::new(1., 1.),
+        };
+
+        block
+    }
+    pub fn grass() -> Block {
+        let block = Block {
+            block_name: "grass".to_string(),
+            texture_pos: Vec2::new(1., -1.),
+        };
+
+        block
+    }
 }
