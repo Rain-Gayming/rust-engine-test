@@ -12,22 +12,20 @@ pub struct Biome {
 
 impl Biome {
     pub fn planes() -> Biome {
-        let biome = Biome {
+        Biome {
             surface_block: Block::grass(),
             base_height: 10,
             frequency: 0.05,
             amplitude: 7.0,
-        };
-        biome
+        }
     }
     pub fn desert() -> Biome {
-        let biome = Biome {
+        Biome {
             surface_block: Block::sand(),
             base_height: 10,
             frequency: 0.025,
             amplitude: 3.0,
-        };
-        biome
+        }
     }
 }
 

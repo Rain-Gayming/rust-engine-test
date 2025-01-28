@@ -12,7 +12,7 @@ impl Default for GameSettings {
     fn default() -> Self {
         GameSettings {
             fps_limit: 60,
-            render_distance: 8,
+            render_distance: 24,
             vertical_render_distance: 2,
         }
     }

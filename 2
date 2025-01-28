@@ -1,15 +1,12 @@
+#[allow(clippy::too_many_arguments)]
 mod game;
 mod player;
 mod ui;
 mod world;
 
-use std::slice::ChunksMut;
-use std::usize;
-
-use bevy::ecs::world::CommandQueue;
 use bevy::prelude::*;
 use bevy::tasks::futures_lite::future;
-use bevy::tasks::{block_on, AsyncComputeTaskPool, Task};
+use bevy::tasks::{block_on, AsyncComputeTaskPool};
 use bevy::utils::hashbrown::HashMap;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{pbr::wireframe::*, window::PresentMode};
@@ -24,15 +21,12 @@ use rand::Rng;
 use ui::performance::ui_example_system;
 use world::biome::BiomeGenerator;
 use world::block::Block;
-use world::chunk::{self, Chunk};
-use world::chunk_mesh_builder::{self, ChunkMeshBuilder};
+use world::chunk::Chunk;
+use world::chunk_mesh_builder::ChunkMeshBuilder;
 use world::noise::NoiseGenerator;
 use world::rendering_constants::CHUNK_SIZE;
 use world::voxel::Voxel;
 use world::world::{BiomeMap, ChunkGenerationTasks, ChunkMap, EntityChunkMap, NoiseMap};
-
-#[derive(Component)]
-struct ComputeTransform(Task<CommandQueue>);
 
 fn main() {
     let seed: i32 = rand::thread_rng().gen_range(0..10000);
@@ -220,7 +214,7 @@ fn recieve_chunk_generation(
         // keep the entry in our HashMap only if the task is not done yet
         let retain = status.is_none();
 
-        let chunk_coords = chunk_coord.clone();
+        let chunk_coords = *chunk_coord;
 
         // if this task is done, handle the data it returned!
         if let Some(mut chunk_data) = status {
@@ -255,110 +249,112 @@ fn recieve_chunk_generation(
                         let is_visible = (world_pos.y as f32)
                             < biome.base_height as f32 + (height_variation as f32).round();
 
-                        let voxel_index = new_voxel_pos[0] as usize
-                            + new_voxel_pos[1] as usize * CHUNK_SIZE as usize
-                            + new_voxel_pos[2] as usize * CHUNK_SIZE as usize * CHUNK_SIZE as usize;
-                        //chunk_data.voxels_in_chunk.insert(new_voxel_pos, voxel);
-                        chunk_data.set_voxel(voxel_index, is_visible, block);
+                        let voxel = Voxel::new(is_visible, block);
+
+                        chunk_data.voxels_in_chunk.insert(new_voxel_pos, voxel);
                     }
                 }
             }
 
             //actually makes their mesh
-
-            for x in 0..CHUNK_SIZE {
-                for y in 0..CHUNK_SIZE {
+            for x in 0..CHUNK_SIZE{
+                for y in 0..CHUNK_SIZE{
                     for z in 0..CHUNK_SIZE {
-                        let voxel_world_position = [x, y, z];
-                        let voxel_position = x as usize
-                            + y as usize * CHUNK_SIZE as usize
-                            + z as usize * CHUNK_SIZE as usize * CHUNK_SIZE as usize;
-                        let voxel = chunk_data.voxels_in_chunk[voxel_position].clone();
-
-                        if voxel.clone().get_visible() {
-                            //left face
-                            if x == 0
-                                || !chunk_data.voxels_in_chunk[voxel_position - 1 as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    2,
-                                    voxel.clone().block.texture_pos_left,
-                                );
-                            }
-
-                            //right face
-                            if x == CHUNK_SIZE - 1
-                                || !chunk_data.voxels_in_chunk[voxel_position + 1 as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    3,
-                                    voxel.clone().block.texture_pos_right,
-                                );
-                            }
-
-                            //bottom face
-                            if y == 0
-                                || !chunk_data.voxels_in_chunk[voxel_position - CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    5,
-                                    voxel.clone().block.texture_pos_bottom,
-                                );
-                            }
-
-                            //top faces
-                            if y == CHUNK_SIZE - 1
-                                || !chunk_data.voxels_in_chunk[voxel_position + CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    0,
-                                    voxel.clone().block.texture_pos_top,
-                                );
-                            }
-
-                            //front chunk
-                            if z == 0
-                                || !chunk_data.voxels_in_chunk
-                                    [voxel_position - CHUNK_SIZE as usize * CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    1,
-                                    voxel.clone().block.texture_pos_front,
-                                );
-                            }
-
-                            //back chunk
-                            if z == CHUNK_SIZE - 1
-                                || !chunk_data.voxels_in_chunk
-                                    [voxel_position + CHUNK_SIZE as usize * CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    4,
-                                    voxel.clone().block.texture_pos_back,
-                                );
-                            }
-                        }
+                        let voxel = chunk[x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE];
+                let voxel_position = voxel;
+                if voxel.get_visible() {
+                    //left face
+                    if voxel_position[0] == 0
+                        || !chunk_data
+                            .voxels_in_chunk.get_visible(voxel_position[0] - 1, voxel_position[1], voxel_position[]))
+                            
+                    {
+                        my_chunk_builder.add_face(
+                            *voxel_position,
+                            2,
+                            voxel.1.block.texture_pos_left,
+                        );
                     }
+
+                    //right face
+                    if voxel_position[0] == CHUNK_SIZE - 1
+                        || !chunk_data
+                            .voxels_in_chunk
+                            .get(&[voxel_position[0] + 1, voxel_position[1], voxel_position[2]])
+                            .unwrap()
+                            .is_visible
+                    {
+                        my_chunk_builder.add_face(
+                            *voxel_position,
+                            3,
+                            voxel.1.block.texture_pos_right,
+                        );
+                    }
+
+                    //bottom face
+                    if voxel_position[1] == 0
+                        || !chunk_data
+                            .voxels_in_chunk
+                            .get(&[voxel_position[0], voxel_position[1] - 1, voxel_position[2]])
+                            .unwrap()
+                            .is_visible
+                    {
+                        my_chunk_builder.add_face(
+                            *voxel_position,
+                            5,
+                            voxel.1.block.texture_pos_bottom,
+                        );
+                    }
+
+                    //top faces
+                    if voxel_position[1] == CHUNK_SIZE - 1
+                        || !chunk_data
+                            .voxels_in_chunk
+                            .get(&[voxel_position[0], voxel_position[1] + 1, voxel_position[2]])
+                            .unwrap()
+                            .is_visible
+                    {
+                        my_chunk_builder.add_face(
+                            *voxel_position,
+                            0,
+                            voxel.1.block.texture_pos_top,
+                        );
+                    }
+
+                    //front chunk
+                    if voxel_position[2] == 0
+                        || !chunk_data
+                            .voxels_in_chunk
+                            .get(&[voxel_position[0], voxel_position[1], voxel_position[2] - 1])
+                            .unwrap()
+                            .is_visible
+                    {
+                        my_chunk_builder.add_face(
+                            *voxel_position,
+                            1,
+                            voxel.1.block.texture_pos_front,
+                        );
+                    }
+
+                    //back chunk
+                    if voxel_position[2] == CHUNK_SIZE - 1
+                        || !chunk_data
+                            .voxels_in_chunk
+                            .get(&[voxel_position[0], voxel_position[1], voxel_position[2] + 1])
+                            .unwrap()
+                            .is_visible
+                    {
+                        my_chunk_builder.add_face(
+                            *voxel_position,
+                            4,
+                            voxel.1.block.texture_pos_back,
+                        );
+                    }
+                
                 }
-            }
+                    
+                
+                 
 
             let chunk_mesh_handle: Handle<Mesh> = meshes.add(my_chunk_builder.build());
             let custom_texture_handle: Handle<Image> = asset_server.load("array_texture.png");
@@ -404,7 +400,7 @@ fn unload_chunks(
 ) {
     let mut keys: Vec<IVec3> = Vec::new();
     for key in chunks.keys() {
-        keys.push(key.clone());
+        keys.push(*key);
     }
 
     let player_pos = player_transform.translation;
