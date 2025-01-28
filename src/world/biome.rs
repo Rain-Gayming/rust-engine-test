@@ -1,3 +1,5 @@
+use std::clone;
+
 use noise::{NoiseFn, Perlin};
 
 use super::{block::Block, noise::NoiseGenerator};
@@ -31,6 +33,7 @@ impl Biome {
     }
 }
 
+#[derive(Clone)]
 pub struct BiomeGenerator {
     temperature_noise: Perlin,
     rainfall_noise: Perlin,

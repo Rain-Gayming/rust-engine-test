@@ -5,9 +5,13 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.1"
-iyes_perf_ui = "*"
 bevy-fps-ui = "0.3.0"
 noise = "0.8.2"
 rand = "0.8.5"
 bevy_egui = "0.32"
 bevy_framepace = "0.18"
+async-channel = "2.3.1"
+
+[profile.profiling]
+inherits = "release"
+debug = true

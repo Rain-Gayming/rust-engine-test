@@ -1,0 +1,11 @@
+
+#### Engine ###
+
+--- rendering ---
+
+- [x] optimise mesh rendering
+- [~] chunk multi-therading
+
+make a function that spawns all the the chunks and then creates a task for them, this function should only have the chunkmap and task pool
+
+make another function that takes those tasks and renders/creates the entity with its mesh, position, material ect, this function should have the material, commands, asset server ect
