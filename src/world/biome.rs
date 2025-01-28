@@ -51,8 +51,8 @@ impl BiomeGenerator {
         let scale = 0.03;
         let temperature = self.temperature_noise.get([wx * scale, wz * scale]);
         let rainfall = self.rainfall_noise.get([wx * scale, wz * scale]);
-        println!("rainfall: {}", rainfall);
-        println!("temp: {}", temperature);
+        //println!("rainfall: {}", rainfall);
+        //println!("temp: {}", temperature);
         match (temperature, rainfall) {
             (t, r) if t > 0.5 && r < -0.3 => Biome::desert(),
             _ => Biome::planes(),

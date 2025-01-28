@@ -3,11 +3,8 @@ mod player;
 mod ui;
 mod world;
 
-use bevy::color::palettes::css::WHITE;
 use bevy::ecs::world::CommandQueue;
-#[warn(unused_variables)]
 use bevy::prelude::*;
-use bevy::state::commands;
 use bevy::tasks::futures_lite::future;
 use bevy::tasks::{block_on, AsyncComputeTaskPool, Task};
 use bevy::utils::hashbrown::HashMap;
@@ -22,7 +19,7 @@ use player::free_cam::*;
 use player::player::Player;
 use rand::Rng;
 use ui::performance::ui_example_system;
-use world::biome::{Biome, BiomeGenerator};
+use world::biome::BiomeGenerator;
 use world::block::Block;
 use world::chunk::{self, Chunk};
 use world::chunk_mesh_builder::ChunkMeshBuilder;
@@ -51,10 +48,10 @@ fn main() {
         .add_plugins(EguiPlugin)
         .add_plugins(bevy_framepace::FramepacePlugin)
         //resources
-        .insert_resource(WireframeConfig {
+        /* .insert_resource(WireframeConfig {
             global: true,
             default_color: WHITE.into(),
-        })
+        })*/
         .insert_resource(ChunkMap(HashMap::new()))
         .insert_resource(EntityChunkMap(HashMap::new()))
         .insert_resource(BiomeMap {
@@ -98,7 +95,7 @@ fn setup(mut commands: Commands) {
         camera_transform,
         Player {
             chunk_position: IVec3::new(0, 0, 0),
-            in_new_chunk: false,
+            in_new_chunk: true,
         },
     ));
 
@@ -185,17 +182,15 @@ fn begin_chunk_generation(
                     let chunk_coords: IVec3;
                     chunk_coords = IVec3::new(x as i32, y as i32, z as i32);
 
-                    if y == 0 {
-                        if !chunks.0.contains_key(&chunk_coords) {
-                            let new_chunk = Chunk::new();
-                            let gen_chunk = new_chunk.clone();
-                            let task = task_pool.spawn(async move {
-                                //what goes here exactly?
-                                new_chunk
-                            });
-                            tasks.generating_chunks.insert(chunk_coords, task);
-                            chunks.insert(chunk_coords, gen_chunk);
-                        }
+                    if y == 0 && !chunks.0.contains_key(&chunk_coords) {
+                        let new_chunk = Chunk::new();
+                        let gen_chunk = new_chunk.clone();
+                        let task = task_pool.spawn(async move {
+                            //what goes here exactly?
+                            new_chunk
+                        });
+                        tasks.generating_chunks.insert(chunk_coords, task);
+                        chunks.insert(chunk_coords, gen_chunk);
                     }
                 }
             }
@@ -214,6 +209,7 @@ fn recieve_chunk_generation(
     noise_generator: Res<NoiseMap>,
     biome_generator: Res<BiomeMap>,
 ) {
+    let mut chunks_loaded: i32 = 0;
     my_tasks.generating_chunks.retain(|chunk_coord, task| {
         // check on our task to see how it's doing :)
         let status = block_on(future::poll_once(task));
@@ -225,6 +221,7 @@ fn recieve_chunk_generation(
 
         // if this task is done, handle the data it returned!
         if let Some(mut chunk_data) = status {
+            chunks_loaded += 1;
             chunks.insert(chunk_coords, chunk_data.clone());
 
             let mut my_chunk_builder = ChunkMeshBuilder::new();
@@ -235,7 +232,6 @@ fn recieve_chunk_generation(
             for x in 0..CHUNK_SIZE {
                 for y in 0..CHUNK_SIZE {
                     for z in 0..CHUNK_SIZE {
-                        println!("new voxel ^-^");
                         let world_pos = local_pos_to_world(
                             *chunk_coord,
                             Vec3::new(x as f32, y as f32, z as f32),
@@ -383,6 +379,10 @@ fn recieve_chunk_generation(
         }
         retain
     });
+    println!(
+        "chunk rendering finished with {} chunks rendered",
+        chunks_loaded
+    );
 }
 
 pub fn local_pos_to_world(offset: IVec3, local_pos: Vec3) -> Vec3 {
@@ -402,7 +402,6 @@ fn unload_chunks(
     let mut keys: Vec<IVec3> = Vec::new();
     for key in chunks.keys() {
         keys.push(key.clone());
-        println!("{}", key);
     }
 
     let player_pos = player_transform.translation;
@@ -410,7 +409,6 @@ fn unload_chunks(
         let chunk_location = Vec3::new(chunk_pos.x as f32, chunk_pos.y as f32, chunk_pos.z as f32);
         let distance = Vec3::distance(player_pos, chunk_location);
         if distance > settings.render_distance as f32 * CHUNK_SIZE as f32 {
-            println!("{}", distance);
             if let Some(entity) = chunk_entities.get(&chunk_pos) {
                 commands.entity(*entity).despawn();
                 chunk_entities.remove(&chunk_pos);
