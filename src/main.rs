@@ -21,7 +21,7 @@ use rand::Rng;
 use ui::performance::ui_example_system;
 use world::biome::BiomeGenerator;
 use world::block::Block;
-use world::chunk::{self, Chunk};
+use world::chunk::Chunk;
 use world::chunk_mesh_builder::ChunkMeshBuilder;
 use world::noise::NoiseGenerator;
 use world::rendering_constants::CHUNK_SIZE;
@@ -243,17 +243,15 @@ fn recieve_chunk_generation(
                             biome.frequency,
                             biome.amplitude,
                         );
-                        let block: Block;
+                        let block = if new_voxel_pos[1] < biome.base_height - 3 {
+                            Block::stone()
+                        } else {
+                            biome.clone().surface_block
+                        };
 
                         let is_visible = (world_pos.y as f32)
                             < biome.base_height as f32 + (height_variation as f32).round();
-                        /*if new_voxel_pos[1] < biome.base_height - 3 {
-                            block = Block::stone();
-                        } else {
-                            block = biome.clone().surface_block;
-                        }*/
 
-                        block = biome.clone().surface_block;
                         let voxel = Voxel::new(is_visible, block);
 
                         chunk_data.voxels_in_chunk.insert(new_voxel_pos, voxel);
@@ -387,9 +385,9 @@ fn recieve_chunk_generation(
 
 pub fn local_pos_to_world(offset: IVec3, local_pos: Vec3) -> Vec3 {
     Vec3::new(
-        local_pos.x as f32 + (offset[0] as f32 * CHUNK_SIZE as f32),
-        local_pos.y as f32 + (offset[1] as f32 * CHUNK_SIZE as f32),
-        local_pos.z as f32 + (offset[2] as f32 * CHUNK_SIZE as f32),
+        local_pos.x + (offset[0] as f32 * CHUNK_SIZE as f32),
+        local_pos.y + (offset[1] as f32 * CHUNK_SIZE as f32),
+        local_pos.z + (offset[2] as f32 * CHUNK_SIZE as f32),
     )
 }
 fn unload_chunks(
@@ -401,7 +399,7 @@ fn unload_chunks(
 ) {
     let mut keys: Vec<IVec3> = Vec::new();
     for key in chunks.keys() {
-        keys.push(key.clone());
+        keys.push(*key);
     }
 
     let player_pos = player_transform.translation;
