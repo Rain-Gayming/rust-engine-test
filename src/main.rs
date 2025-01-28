@@ -3,10 +3,9 @@ mod player;
 mod ui;
 mod world;
 
-use bevy::ecs::world::CommandQueue;
 use bevy::prelude::*;
 use bevy::tasks::futures_lite::future;
-use bevy::tasks::{block_on, AsyncComputeTaskPool, Task};
+use bevy::tasks::{block_on, AsyncComputeTaskPool};
 use bevy::utils::hashbrown::HashMap;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{pbr::wireframe::*, window::PresentMode};
@@ -27,9 +26,6 @@ use world::noise::NoiseGenerator;
 use world::rendering_constants::CHUNK_SIZE;
 use world::voxel::Voxel;
 use world::world::{BiomeMap, ChunkGenerationTasks, ChunkMap, EntityChunkMap, NoiseMap};
-
-#[derive(Component)]
-struct ComputeTransform(Task<CommandQueue>);
 
 fn main() {
     let seed: i32 = rand::thread_rng().gen_range(0..10000);
@@ -217,7 +213,7 @@ fn recieve_chunk_generation(
         // keep the entry in our HashMap only if the task is not done yet
         let retain = status.is_none();
 
-        let chunk_coords = chunk_coord.clone();
+        let chunk_coords = *chunk_coord;
 
         // if this task is done, handle the data it returned!
         if let Some(mut chunk_data) = status {

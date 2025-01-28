@@ -1,9 +1,6 @@
 use std::clone;
 
-use bevy::{
-    prelude::*,
-    tasks::{AsyncComputeTaskPool, Task},
-};
+use bevy::{prelude::*, tasks::Task};
 
 use super::{biome::BiomeGenerator, chunk::Chunk, noise::NoiseGenerator};
 use bevy::utils::HashMap;

@@ -1,8 +1,6 @@
-use std::clone;
-
 use noise::{NoiseFn, Perlin};
 
-use super::{block::Block, noise::NoiseGenerator};
+use super::block::Block;
 
 #[derive(Clone)]
 pub struct Biome {
