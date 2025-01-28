@@ -167,6 +167,7 @@ fn begin_chunk_generation(
     mut chunks: ResMut<ChunkMap>,
 ) {
     for player in &mut cl_query {
+        println!("begining to render some chunks");
         //x - view dist + x + view dist gets all the chunks around the player
         let task_pool = AsyncComputeTaskPool::get();
 
@@ -179,8 +180,7 @@ fn begin_chunk_generation(
                 for z in player.0.chunk_position.z - game_settings.render_distance
                     ..=player.0.chunk_position.z + game_settings.render_distance
                 {
-                    let chunk_coords: IVec3;
-                    chunk_coords = IVec3::new(x as i32, y as i32, z as i32);
+                    let chunk_coords: IVec3 = IVec3::new(x, y, z);
 
                     if y == 0 && !chunks.0.contains_key(&chunk_coords) {
                         let new_chunk = Chunk::new();

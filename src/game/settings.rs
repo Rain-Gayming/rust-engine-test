@@ -13,7 +13,7 @@ impl Default for GameSettings {
         GameSettings {
             fps_limit: 60,
             render_distance: 8,
-            vertical_render_distance: 8,
+            vertical_render_distance: 2,
         }
     }
 }
