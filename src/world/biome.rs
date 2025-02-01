@@ -1,6 +1,6 @@
 use noise::{NoiseFn, Perlin};
 
-use super::block::Block;
+use super::voxel::Block;
 
 #[derive(Clone)]
 pub struct Biome {
@@ -13,7 +13,7 @@ pub struct Biome {
 impl Biome {
     pub fn planes() -> Biome {
         Biome {
-            surface_block: Block::grass(),
+            surface_block: Block::Grass,
             base_height: 10,
             frequency: 0.05,
             amplitude: 7.0,
@@ -21,7 +21,7 @@ impl Biome {
     }
     pub fn desert() -> Biome {
         Biome {
-            surface_block: Block::sand(),
+            surface_block: Block::Sand,
             base_height: 10,
             frequency: 0.025,
             amplitude: 3.0,

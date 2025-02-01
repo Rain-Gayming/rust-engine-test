@@ -1,8 +1,7 @@
-use std::clone;
-
+use crate::utils::noise::*;
 use bevy::{prelude::*, tasks::Task};
 
-use super::{biome::BiomeGenerator, chunk::Chunk, noise::NoiseGenerator};
+use super::{biome::BiomeGenerator, chunk::Chunk};
 use bevy::utils::HashMap;
 
 #[derive(Resource, Deref, DerefMut, Clone)]

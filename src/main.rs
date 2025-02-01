@@ -1,38 +1,32 @@
 mod game;
 mod player;
 mod ui;
+mod utils;
 mod world;
 
-use std::slice::ChunksMut;
-use std::usize;
-
-use bevy::ecs::world::CommandQueue;
+use bevy::color::palettes::css::*;
 use bevy::prelude::*;
 use bevy::tasks::futures_lite::future;
-use bevy::tasks::{block_on, AsyncComputeTaskPool, Task};
+use bevy::tasks::{block_on, AsyncComputeTaskPool};
 use bevy::utils::hashbrown::HashMap;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{pbr::wireframe::*, window::PresentMode};
 use bevy_egui::EguiPlugin;
 use bevy_fps_ui::*;
-use bevy_framepace::Limiter;
 use game::game_state::GameState;
 use game::settings::GameSettings;
 use player::free_cam::*;
 use player::player::Player;
 use rand::Rng;
 use ui::performance::ui_example_system;
+use utils::noise::NoiseGenerator;
 use world::biome::BiomeGenerator;
-use world::block::Block;
-use world::chunk::{self, Chunk};
-use world::chunk_mesh_builder::{self, ChunkMeshBuilder};
-use world::noise::NoiseGenerator;
+use world::chunk::Chunk;
+use world::chunk_mesh_builder::ChunkMeshBuilder;
 use world::rendering_constants::CHUNK_SIZE;
-use world::voxel::Voxel;
-use world::world::{BiomeMap, ChunkGenerationTasks, ChunkMap, EntityChunkMap, NoiseMap};
+use world::voxel::Block;
 
-#[derive(Component)]
-struct ComputeTransform(Task<CommandQueue>);
+use world::world::{BiomeMap, ChunkGenerationTasks, ChunkMap, EntityChunkMap, NoiseMap};
 
 fn main() {
     let seed: i32 = rand::thread_rng().gen_range(0..10000);
@@ -48,13 +42,11 @@ fn main() {
         }))
         .add_plugins(FpsCounterPlugin)
         .add_plugins(WireframePlugin)
-        .add_plugins(EguiPlugin)
-        .add_plugins(bevy_framepace::FramepacePlugin)
-        //resources
-        /* .insert_resource(WireframeConfig {
+        .add_plugins(EguiPlugin) //resources
+        .insert_resource(WireframeConfig {
             global: true,
             default_color: WHITE.into(),
-        })*/
+        })
         .insert_resource(ChunkMap(HashMap::new()))
         .insert_resource(EntityChunkMap(HashMap::new()))
         .insert_resource(BiomeMap {
@@ -69,7 +61,7 @@ fn main() {
         .insert_resource(GameSettings::default())
         .insert_resource(GameState { is_paused: false })
         //systems
-        .add_systems(Update, (input_handler, cursor_grab, update))
+        .add_systems(Update, (input_handler, cursor_grab))
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -128,15 +120,6 @@ fn cursor_grab(
         }
     }
 }
-fn update(settings: Res<GameSettings>, mut limiter: ResMut<bevy_framepace::FramepaceSettings>) {
-    limiter.limiter = match limiter.limiter {
-        Limiter::Auto => Limiter::from_framerate(settings.fps_limit as f64),
-        Limiter::Off => Limiter::from_framerate(settings.fps_limit as f64),
-
-        Limiter::Manual(_) => Limiter::from_framerate(settings.fps_limit as f64),
-    }
-}
-
 fn update_player_chunk_coord(mut player_query: Query<(&mut Player, &Transform)>) {
     for mut player in &mut player_query {
         let position = player.1.translation;
@@ -220,7 +203,7 @@ fn recieve_chunk_generation(
         // keep the entry in our HashMap only if the task is not done yet
         let retain = status.is_none();
 
-        let chunk_coords = chunk_coord.clone();
+        let chunk_coords = *chunk_coord;
 
         // if this task is done, handle the data it returned!
         if let Some(mut chunk_data) = status {
@@ -247,7 +230,7 @@ fn recieve_chunk_generation(
                             biome.amplitude,
                         );
                         let block = if new_voxel_pos[1] < biome.base_height - 3 {
-                            Block::stone()
+                            Block::Stone
                         } else {
                             biome.clone().surface_block
                         };
@@ -260,102 +243,6 @@ fn recieve_chunk_generation(
                             + new_voxel_pos[2] as usize * CHUNK_SIZE as usize * CHUNK_SIZE as usize;
                         //chunk_data.voxels_in_chunk.insert(new_voxel_pos, voxel);
                         chunk_data.set_voxel(voxel_index, is_visible, block);
-                    }
-                }
-            }
-
-            //actually makes their mesh
-
-            for x in 0..CHUNK_SIZE {
-                for y in 0..CHUNK_SIZE {
-                    for z in 0..CHUNK_SIZE {
-                        let voxel_world_position = [x, y, z];
-                        let voxel_position = x as usize
-                            + y as usize * CHUNK_SIZE as usize
-                            + z as usize * CHUNK_SIZE as usize * CHUNK_SIZE as usize;
-                        let voxel = chunk_data.voxels_in_chunk[voxel_position].clone();
-
-                        if voxel.clone().get_visible() {
-                            //left face
-                            if x == 0
-                                || !chunk_data.voxels_in_chunk[voxel_position - 1 as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    2,
-                                    voxel.clone().block.texture_pos_left,
-                                );
-                            }
-
-                            //right face
-                            if x == CHUNK_SIZE - 1
-                                || !chunk_data.voxels_in_chunk[voxel_position + 1 as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    3,
-                                    voxel.clone().block.texture_pos_right,
-                                );
-                            }
-
-                            //bottom face
-                            if y == 0
-                                || !chunk_data.voxels_in_chunk[voxel_position - CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    5,
-                                    voxel.clone().block.texture_pos_bottom,
-                                );
-                            }
-
-                            //top faces
-                            if y == CHUNK_SIZE - 1
-                                || !chunk_data.voxels_in_chunk[voxel_position + CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    0,
-                                    voxel.clone().block.texture_pos_top,
-                                );
-                            }
-
-                            //front chunk
-                            if z == 0
-                                || !chunk_data.voxels_in_chunk
-                                    [voxel_position - CHUNK_SIZE as usize * CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    1,
-                                    voxel.clone().block.texture_pos_front,
-                                );
-                            }
-
-                            //back chunk
-                            if z == CHUNK_SIZE - 1
-                                || !chunk_data.voxels_in_chunk
-                                    [voxel_position + CHUNK_SIZE as usize * CHUNK_SIZE as usize]
-                                    .clone()
-                                    .get_visible()
-                            {
-                                my_chunk_builder.add_face(
-                                    voxel_world_position,
-                                    4,
-                                    voxel.clone().block.texture_pos_back,
-                                );
-                            }
-                        }
                     }
                 }
             }
@@ -404,7 +291,7 @@ fn unload_chunks(
 ) {
     let mut keys: Vec<IVec3> = Vec::new();
     for key in chunks.keys() {
-        keys.push(key.clone());
+        keys.push(*key);
     }
 
     let player_pos = player_transform.translation;

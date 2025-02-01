@@ -4,7 +4,6 @@ use bevy_egui::{
     egui::{self},
     EguiContexts,
 };
-use bevy_framepace::Limiter;
 
 use crate::game::settings::GameSettings;
 

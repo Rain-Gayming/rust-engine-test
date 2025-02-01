@@ -31,7 +31,13 @@ impl ChunkMeshBuilder {
         }
         base
     }
-    pub fn add_face(&mut self, coord: [u8; 3], face_index: u8, position: [u8; 2]) {
+    pub fn add_face(
+        &mut self,
+        coord: [u8; 3],
+        face_index: u8,
+        /*position: [u8; 2],*/
+        scale: [u8; 2],
+    ) {
         for i in &VERTICES[face_index as usize] {
             self.vertices.push(Self::add_vec3(*i, coord));
         }
@@ -48,10 +54,10 @@ impl ChunkMeshBuilder {
             self.normals.push(NORMALS[face_index as usize]);
         }
         let mut uvs = UVS.clone();
-        for uv in &mut uvs {
+        /*for uv in &mut uvs {
             uv[0] += position[0] as f32;
             uv[1] += position[1] as f32;
-        }
+        }*/
         self.uvs.extend_from_slice(&uvs);
         self.face_count += 1;
     }
