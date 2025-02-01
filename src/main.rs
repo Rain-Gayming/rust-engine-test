@@ -210,7 +210,7 @@ fn recieve_chunk_generation(
             chunks_loaded += 1;
             chunks.insert(chunk_coords, chunk_data.clone());
 
-            let mut my_chunk_builder = ChunkMeshBuilder::new();
+            let my_chunk_builder = ChunkMeshBuilder::new();
             let biome = biome_generator
                 .biome_generator
                 .get_biome(chunk_coords.x as f64, chunk_coords.z as f64);
@@ -235,14 +235,11 @@ fn recieve_chunk_generation(
                             biome.clone().surface_block
                         };
 
-                        let is_visible = (world_pos.y as f32)
-                            < biome.base_height as f32 + (height_variation as f32).round();
-
                         let voxel_index = new_voxel_pos[0] as usize
                             + new_voxel_pos[1] as usize * CHUNK_SIZE as usize
                             + new_voxel_pos[2] as usize * CHUNK_SIZE as usize * CHUNK_SIZE as usize;
                         //chunk_data.voxels_in_chunk.insert(new_voxel_pos, voxel);
-                        chunk_data.set_voxel(voxel_index, is_visible, block);
+                        chunk_data.set_voxel(voxel_index, block);
                     }
                 }
             }
