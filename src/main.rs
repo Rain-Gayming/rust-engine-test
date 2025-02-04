@@ -4,8 +4,13 @@ mod ui;
 mod utils;
 mod world;
 
+use std::usize;
+
+use bevy::asset::RenderAssetUsages;
 use bevy::color::palettes::css::*;
+use bevy::prelude::Mesh;
 use bevy::prelude::*;
+use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::tasks::futures_lite::future;
 use bevy::tasks::{block_on, AsyncComputeTaskPool};
 use bevy::utils::hashbrown::HashMap;
@@ -22,9 +27,9 @@ use ui::performance::ui_example_system;
 use utils::noise::NoiseGenerator;
 use world::biome::BiomeGenerator;
 use world::chunk::Chunk;
-use world::chunk_mesh_builder::ChunkMeshBuilder;
+use world::chunk_mesh_builder::{self, ChunkMeshBuilder};
 use world::rendering_constants::CHUNK_SIZE;
-use world::voxel::Block;
+use world::voxel::{Block, Voxel};
 
 use world::world::{BiomeMap, ChunkGenerationTasks, ChunkMap, EntityChunkMap, NoiseMap};
 
@@ -229,22 +234,30 @@ fn recieve_chunk_generation(
                             biome.frequency,
                             biome.amplitude,
                         );
-                        let block = if new_voxel_pos[1] < biome.base_height - 3 {
+                        let mut block = if new_voxel_pos[1] < biome.base_height as usize - 3 {
                             Block::Stone
                         } else {
                             biome.clone().surface_block
                         };
 
-                        let voxel_index = new_voxel_pos[0] as usize
-                            + new_voxel_pos[1] as usize * CHUNK_SIZE as usize
-                            + new_voxel_pos[2] as usize * CHUNK_SIZE as usize * CHUNK_SIZE as usize;
+                        if (world_pos.y as f32)
+                            > biome.base_height as f32 + (height_variation as f32).round()
+                        {
+                            block = Block::Air;
+                        }
+
+                        let voxel_index = new_voxel_pos[0]
+                            + new_voxel_pos[1] * CHUNK_SIZE
+                            + new_voxel_pos[2] * CHUNK_SIZE * CHUNK_SIZE;
                         //chunk_data.voxels_in_chunk.insert(new_voxel_pos, voxel);
                         chunk_data.set_voxel(voxel_index, block);
                     }
                 }
             }
 
-            let chunk_mesh_handle: Handle<Mesh> = meshes.add(my_chunk_builder.build());
+            let columns = get_columns(chunk_data);
+
+            let chunk_mesh_handle: Mesh = make_quads_from_column(columns);
             let custom_texture_handle: Handle<Image> = asset_server.load("array_texture.png");
             let chunk_id = commands
                 .spawn((
@@ -253,7 +266,7 @@ fn recieve_chunk_generation(
                         chunk_coord.y as f32 * CHUNK_SIZE as f32,
                         chunk_coord.z as f32 * CHUNK_SIZE as f32,
                     ),
-                    Mesh3d(chunk_mesh_handle),
+                    //Mesh3d(chunk_mesh_handle),
                     MeshMaterial3d(materials.add(StandardMaterial {
                         base_color_texture: Some(custom_texture_handle),
                         alpha_mode: AlphaMode::Mask(0.2),
@@ -270,6 +283,65 @@ fn recieve_chunk_generation(
         "chunk rendering finished with {} chunks rendered",
         chunks_loaded
     );
+}
+
+pub fn get_columns(chunk: Chunk) -> [u32; CHUNK_SIZE * CHUNK_SIZE] {
+    let mut columns: [u32; CHUNK_SIZE * CHUNK_SIZE] = [0; CHUNK_SIZE * CHUNK_SIZE];
+    for i in 0..(CHUNK_SIZE * CHUNK_SIZE) {
+        let column = get_column_solid(
+            &chunk.voxels_in_chunk[(i * CHUNK_SIZE)..(i * CHUNK_SIZE + CHUNK_SIZE)],
+        );
+        columns[i] = column;
+    }
+    columns
+}
+
+pub fn get_column_solid(column: &[Voxel]) -> u32 {
+    let mut output_column: u32 = 0;
+
+    for (i, block) in column.iter().enumerate() {
+        if !block.block.is_solid() {
+            continue;
+        }
+        output_column |= 1 << i;
+    }
+
+    output_column
+}
+
+//loop through each column (for bit in columns_counted * CHUNK_SIZE)
+//check if the next column over has the bits in the same positions
+//repeat until
+//convert the bits into a quad
+//go to the next bits and repeat 1-4
+//set 1 bits in quad to 0 so they don't get rechecked
+#[deny(arithmetic_overflow)]
+pub fn make_quads_from_column(columns: [u32; CHUNK_SIZE * CHUNK_SIZE]) -> Mesh {
+    let mut msh = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::RENDER_WORLD,
+    );
+    //for each u32 (column)
+    for (columns_counted, column) in columns.into_iter().enumerate() {
+        //look over each number in the column
+        for i in 0..32 {
+            let bit = (column >> i) & 1;
+            //is the bit solid?
+            if bit == 1 {
+                println!("current bit is solid");
+                //is the bit not at the end of the column?{
+                if (bit as i32) < ((columns_counted as i32 * CHUNK_SIZE as i32) - 1) {
+                    // if its not check the next bit
+                    // repeat for the following bits
+                    // some how...
+                }
+            } else {
+                println!("current bit is not solid");
+            }
+        }
+    }
+
+    msh
 }
 
 pub fn local_pos_to_world(offset: IVec3, local_pos: Vec3) -> Vec3 {

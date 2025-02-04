@@ -4,8 +4,15 @@
 --- rendering ---
 
 - [x] optimise mesh rendering
-- [~] chunk multi-therading
+- [/] chunk multi-therading
+- [x] greedy meshing
 
-make a function that spawns all the the chunks and then creates a task for them, this function should only have the chunkmap and task pool
 
-make another function that takes those tasks and renders/creates the entity with its mesh, position, material ect, this function should have the material, commands, asset server ect
+## greedy meshing
+
+split each chunk into columns,
+check if each block in the colum is solid,
+check each solid block to see if they have air to the direction we're checking,
+get the first row and check if it has any soldi voxels,
+if it does check the next row and see if it has solid voxels in the same position,
+repeat until you can't any more,

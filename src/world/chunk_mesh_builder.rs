@@ -16,13 +16,13 @@ pub struct ChunkMeshBuilder {
 
 impl ChunkMeshBuilder {
     pub fn new() -> Self {
-        return Self {
+        Self {
             vertices: Vec::with_capacity(131072),
             triangles: Vec::with_capacity(393216),
             normals: Vec::with_capacity(131072),
             uvs: Vec::with_capacity(131072),
             face_count: 0,
-        };
+        }
     }
 
     fn add_vec3(mut base: [f32; 3], addition: [u8; 3]) -> [f32; 3] {
